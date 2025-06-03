@@ -1,0 +1,744 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9A9C53EA2DEF9F200060E85F /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53E92DEF9F200060E85F /* Starscream */; };
+		9A9C53ED2DEF9F340060E85F /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53EC2DEF9F340060E85F /* Auth */; };
+		9A9C53EF2DEF9F340060E85F /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53EE2DEF9F340060E85F /* Functions */; };
+		9A9C53F12DEF9F340060E85F /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53F02DEF9F340060E85F /* PostgREST */; };
+		9A9C53F32DEF9F340060E85F /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53F22DEF9F340060E85F /* Realtime */; };
+		9A9C53F52DEF9F340060E85F /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53F42DEF9F340060E85F /* Storage */; };
+		9A9C53F82DEF9F840060E85F /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53F72DEF9F840060E85F /* WebRTC */; };
+		9A9C542D2DEF9FA60060E85F /* Inject in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C542C2DEF9FA60060E85F /* Inject */; };
+		9A9C54302DEF9FB90060E85F /* InjectionNext in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C542F2DEF9FB90060E85F /* InjectionNext */; };
+		9A9C54352DEFA3520060E85F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C54342DEFA3520060E85F /* Supabase */; };
+		9A9C54372DEFA5C60060E85F /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9A9C54362DEFA5C60060E85F /* Config.xcconfig */; };
+		9A9C54392DEFA5CB0060E85F /* DebugConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9AF997622DEF9DE8007F6F8C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9AF9974C2DEF9DE7007F6F8C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9AF997532DEF9DE7007F6F8C;
+			remoteInfo = ishboxing;
+		};
+		9AF9976C2DEF9DE8007F6F8C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 9AF9974C2DEF9DE7007F6F8C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9AF997532DEF9DE7007F6F8C;
+			remoteInfo = ishboxing;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		9A9C54362DEFA5C60060E85F /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = DebugConfig.xcconfig; sourceTree = "<group>"; };
+		9AF997542DEF9DE7007F6F8C /* ishboxing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ishboxing.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AF997612DEF9DE8007F6F8C /* ishboxingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ishboxingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9AF9976B2DEF9DE8007F6F8C /* ishboxingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ishboxingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		9A9C54322DEFA05A0060E85F /* Exceptions for "ishboxing" folder in "ishboxing" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				Sources/Info.plist,
+			);
+			target = 9AF997532DEF9DE7007F6F8C /* ishboxing */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		9AF997562DEF9DE7007F6F8C /* ishboxing */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				9A9C54322DEFA05A0060E85F /* Exceptions for "ishboxing" folder in "ishboxing" target */,
+			);
+			path = ishboxing;
+			sourceTree = "<group>";
+		};
+		9AF997642DEF9DE8007F6F8C /* ishboxingTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ishboxingTests;
+			sourceTree = "<group>";
+		};
+		9AF9976E2DEF9DE8007F6F8C /* ishboxingUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ishboxingUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		9AF997512DEF9DE7007F6F8C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A9C54352DEFA3520060E85F /* Supabase in Frameworks */,
+				9A9C53F52DEF9F340060E85F /* Storage in Frameworks */,
+				9A9C53F12DEF9F340060E85F /* PostgREST in Frameworks */,
+				9A9C53EF2DEF9F340060E85F /* Functions in Frameworks */,
+				9A9C542D2DEF9FA60060E85F /* Inject in Frameworks */,
+				9A9C53F82DEF9F840060E85F /* WebRTC in Frameworks */,
+				9A9C53ED2DEF9F340060E85F /* Auth in Frameworks */,
+				9A9C53F32DEF9F340060E85F /* Realtime in Frameworks */,
+				9A9C53EA2DEF9F200060E85F /* Starscream in Frameworks */,
+				9A9C54302DEF9FB90060E85F /* InjectionNext in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AF9975E2DEF9DE8007F6F8C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AF997682DEF9DE8007F6F8C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		9A9C54332DEFA3520060E85F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		9AF9974B2DEF9DE7007F6F8C = {
+			isa = PBXGroup;
+			children = (
+				9AF997562DEF9DE7007F6F8C /* ishboxing */,
+				9AF997642DEF9DE8007F6F8C /* ishboxingTests */,
+				9AF9976E2DEF9DE8007F6F8C /* ishboxingUITests */,
+				9A9C54332DEFA3520060E85F /* Frameworks */,
+				9AF997552DEF9DE7007F6F8C /* Products */,
+				9A9C54362DEFA5C60060E85F /* Config.xcconfig */,
+				9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */,
+			);
+			sourceTree = "<group>";
+		};
+		9AF997552DEF9DE7007F6F8C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9AF997542DEF9DE7007F6F8C /* ishboxing.app */,
+				9AF997612DEF9DE8007F6F8C /* ishboxingTests.xctest */,
+				9AF9976B2DEF9DE8007F6F8C /* ishboxingUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		9AF997532DEF9DE7007F6F8C /* ishboxing */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9AF997752DEF9DE8007F6F8C /* Build configuration list for PBXNativeTarget "ishboxing" */;
+			buildPhases = (
+				9AF997502DEF9DE7007F6F8C /* Sources */,
+				9AF997512DEF9DE7007F6F8C /* Frameworks */,
+				9AF997522DEF9DE7007F6F8C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				9AF997562DEF9DE7007F6F8C /* ishboxing */,
+			);
+			name = ishboxing;
+			packageProductDependencies = (
+				9A9C53E92DEF9F200060E85F /* Starscream */,
+				9A9C53EC2DEF9F340060E85F /* Auth */,
+				9A9C53EE2DEF9F340060E85F /* Functions */,
+				9A9C53F02DEF9F340060E85F /* PostgREST */,
+				9A9C53F22DEF9F340060E85F /* Realtime */,
+				9A9C53F42DEF9F340060E85F /* Storage */,
+				9A9C53F72DEF9F840060E85F /* WebRTC */,
+				9A9C542C2DEF9FA60060E85F /* Inject */,
+				9A9C542F2DEF9FB90060E85F /* InjectionNext */,
+				9A9C54342DEFA3520060E85F /* Supabase */,
+			);
+			productName = ishboxing;
+			productReference = 9AF997542DEF9DE7007F6F8C /* ishboxing.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9AF997602DEF9DE8007F6F8C /* ishboxingTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9AF997782DEF9DE8007F6F8C /* Build configuration list for PBXNativeTarget "ishboxingTests" */;
+			buildPhases = (
+				9AF9975D2DEF9DE8007F6F8C /* Sources */,
+				9AF9975E2DEF9DE8007F6F8C /* Frameworks */,
+				9AF9975F2DEF9DE8007F6F8C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9AF997632DEF9DE8007F6F8C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				9AF997642DEF9DE8007F6F8C /* ishboxingTests */,
+			);
+			name = ishboxingTests;
+			packageProductDependencies = (
+			);
+			productName = ishboxingTests;
+			productReference = 9AF997612DEF9DE8007F6F8C /* ishboxingTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		9AF9976A2DEF9DE8007F6F8C /* ishboxingUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9AF9977B2DEF9DE8007F6F8C /* Build configuration list for PBXNativeTarget "ishboxingUITests" */;
+			buildPhases = (
+				9AF997672DEF9DE8007F6F8C /* Sources */,
+				9AF997682DEF9DE8007F6F8C /* Frameworks */,
+				9AF997692DEF9DE8007F6F8C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9AF9976D2DEF9DE8007F6F8C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				9AF9976E2DEF9DE8007F6F8C /* ishboxingUITests */,
+			);
+			name = ishboxingUITests;
+			packageProductDependencies = (
+			);
+			productName = ishboxingUITests;
+			productReference = 9AF9976B2DEF9DE8007F6F8C /* ishboxingUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		9AF9974C2DEF9DE7007F6F8C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					9AF997532DEF9DE7007F6F8C = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					9AF997602DEF9DE8007F6F8C = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 9AF997532DEF9DE7007F6F8C;
+					};
+					9AF9976A2DEF9DE8007F6F8C = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 9AF997532DEF9DE7007F6F8C;
+					};
+				};
+			};
+			buildConfigurationList = 9AF9974F2DEF9DE7007F6F8C /* Build configuration list for PBXProject "ishboxing" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 9AF9974B2DEF9DE7007F6F8C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9A9C53E82DEF9F200060E85F /* XCRemoteSwiftPackageReference "Starscream" */,
+				9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				9A9C53F62DEF9F840060E85F /* XCRemoteSwiftPackageReference "WebRTC" */,
+				9A9C542B2DEF9FA60060E85F /* XCRemoteSwiftPackageReference "Inject" */,
+				9A9C542E2DEF9FB90060E85F /* XCRemoteSwiftPackageReference "InjectionNext" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9AF997552DEF9DE7007F6F8C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9AF997532DEF9DE7007F6F8C /* ishboxing */,
+				9AF997602DEF9DE8007F6F8C /* ishboxingTests */,
+				9AF9976A2DEF9DE8007F6F8C /* ishboxingUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9AF997522DEF9DE7007F6F8C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9A9C54372DEFA5C60060E85F /* Config.xcconfig in Resources */,
+				9A9C54392DEFA5CB0060E85F /* DebugConfig.xcconfig in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AF9975F2DEF9DE8007F6F8C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AF997692DEF9DE8007F6F8C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9AF997502DEF9DE7007F6F8C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AF9975D2DEF9DE8007F6F8C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9AF997672DEF9DE8007F6F8C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		9AF997632DEF9DE8007F6F8C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9AF997532DEF9DE7007F6F8C /* ishboxing */;
+			targetProxy = 9AF997622DEF9DE8007F6F8C /* PBXContainerItemProxy */;
+		};
+		9AF9976D2DEF9DE8007F6F8C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9AF997532DEF9DE7007F6F8C /* ishboxing */;
+			targetProxy = 9AF9976C2DEF9DE8007F6F8C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		9AF997732DEF9DE8007F6F8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = J694G989HW;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"-Xlinker",
+					"-interposable",
+				);
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		9AF997742DEF9DE8007F6F8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A9C54362DEFA5C60060E85F /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = J694G989HW;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		9AF997762DEF9DE8007F6F8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J694G989HW;
+				EMIT_FRONTEND_COMMAND_LINES = true;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ishboxing/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "\"Ish Boxing requires camera access for game play\"";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Ish Boxing requires microphone access for game play\"";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxing;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		9AF997772DEF9DE8007F6F8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A9C54362DEFA5C60060E85F /* Config.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J694G989HW;
+				EMIT_FRONTEND_COMMAND_LINES = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ishboxing/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "\"Ish Boxing requires camera access for game play\"";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Ish Boxing requires microphone access for game play\"";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxing;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9AF997792DEF9DE8007F6F8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J694G989HW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxingTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ishboxing.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ishboxing";
+			};
+			name = Debug;
+		};
+		9AF9977A2DEF9DE8007F6F8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J694G989HW;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxingTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ishboxing.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ishboxing";
+			};
+			name = Release;
+		};
+		9AF9977C2DEF9DE8007F6F8C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J694G989HW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxingUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ishboxing;
+			};
+			name = Debug;
+		};
+		9AF9977D2DEF9DE8007F6F8C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = J694G989HW;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxingUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ishboxing;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		9AF9974F2DEF9DE7007F6F8C /* Build configuration list for PBXProject "ishboxing" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9AF997732DEF9DE8007F6F8C /* Debug */,
+				9AF997742DEF9DE8007F6F8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9AF997752DEF9DE8007F6F8C /* Build configuration list for PBXNativeTarget "ishboxing" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9AF997762DEF9DE8007F6F8C /* Debug */,
+				9AF997772DEF9DE8007F6F8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9AF997782DEF9DE8007F6F8C /* Build configuration list for PBXNativeTarget "ishboxingTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9AF997792DEF9DE8007F6F8C /* Debug */,
+				9AF9977A2DEF9DE8007F6F8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9AF9977B2DEF9DE8007F6F8C /* Build configuration list for PBXNativeTarget "ishboxingUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9AF9977C2DEF9DE8007F6F8C /* Debug */,
+				9AF9977D2DEF9DE8007F6F8C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9A9C53E82DEF9F200060E85F /* XCRemoteSwiftPackageReference "Starscream" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/daltoniam/Starscream.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.0.8;
+			};
+		};
+		9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		9A9C53F62DEF9F840060E85F /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 137.0.0;
+			};
+		};
+		9A9C542B2DEF9FA60060E85F /* XCRemoteSwiftPackageReference "Inject" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/krzysztofzablocki/Inject";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.2;
+			};
+		};
+		9A9C542E2DEF9FB90060E85F /* XCRemoteSwiftPackageReference "InjectionNext" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/johnno1962/InjectionNext.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9A9C53E92DEF9F200060E85F /* Starscream */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53E82DEF9F200060E85F /* XCRemoteSwiftPackageReference "Starscream" */;
+			productName = Starscream;
+		};
+		9A9C53EC2DEF9F340060E85F /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		9A9C53EE2DEF9F340060E85F /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		9A9C53F02DEF9F340060E85F /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		9A9C53F22DEF9F340060E85F /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		9A9C53F42DEF9F340060E85F /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		9A9C53F72DEF9F840060E85F /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53F62DEF9F840060E85F /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
+		};
+		9A9C542C2DEF9FA60060E85F /* Inject */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C542B2DEF9FA60060E85F /* XCRemoteSwiftPackageReference "Inject" */;
+			productName = Inject;
+		};
+		9A9C542F2DEF9FB90060E85F /* InjectionNext */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C542E2DEF9FB90060E85F /* XCRemoteSwiftPackageReference "InjectionNext" */;
+			productName = InjectionNext;
+		};
+		9A9C54342DEFA3520060E85F /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 9AF9974C2DEF9DE7007F6F8C /* Project object */;
+}
