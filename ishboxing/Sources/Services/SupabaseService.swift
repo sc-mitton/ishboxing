@@ -136,6 +136,45 @@ class SupabaseService: ObservableObject {
             )
         }
     }
+
+    func addFriend(_ friendId: String) async throws {
+        let session = try await client.auth.session
+        let userId = session.user.id
+        try await client.functions.invoke(
+            "addFriend",
+            options: FunctionInvokeOptions(
+                body: ["friend_id": friendId, "from": userId.uuidString]
+            ))
+    }
+
+    func confirmFriendship(_ friendshipId: String) async throws {
+        try await client.from("friends")
+            .update(["confirmed": true])
+            .eq("id", value: friendshipId)
+            .execute()
+    }
+
+    func deleteFriendship(_ friendshipId: String) async throws {
+        try await client.from("friends")
+            .delete()
+            .eq("id", value: friendshipId)
+            .execute()
+    }
+
+    func denyFriendship(_ friendshipId: String) async throws {
+        try await deleteFriendship(friendshipId)
+    }
+
+    func getPendingFriendRequests() async throws -> [FriendRequest] {
+        let session = try await client.auth.session
+        let userId = session.user.id
+        let response = try await client.from("friends")
+            .select("id, user_id, friend_id, profiles:friend_id(username)")
+            .eq("friend_id", value: userId)
+            .eq("confirmed", value: false)
+            .execute()
+        return try JSONDecoder().decode([FriendRequest].self, from: response.data)
+    }
 }
 
 protocol SupabaseServiceDelegate: AnyObject {

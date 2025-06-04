@@ -9,14 +9,13 @@ import SwiftUI
 import WebRTC
 
 struct MainView: View {
-    @State private var friends: [User] = []
-    @State private var isLoading = false
-    @State private var errorMessage: String?
+    @StateObject private var friendManagement = FriendManagement()
     @State private var selectedFriend: User?
     @State private var navigateToFight = false
     @State private var notificationMeeting: Meeting?
-
-    private var supabaseService = SupabaseService.shared
+    @State private var showAddFriendModal = false
+    @State private var newFriendUsername = ""
+    @State private var addFriendError: String?
 
     var body: some View {
         NavigationView {
@@ -38,20 +37,29 @@ struct MainView: View {
 
                 // Friends list section
                 List {
-                    Section(header: Text("Friends")) {
-                        if isLoading {
+                    Section(
+                        header:
+                            HStack {
+                                Text("Friends")
+                                Spacer()
+                                Button(action: { showAddFriendModal = true }) {
+                                    Image(systemName: "person.badge.plus")
+                                }
+                            }
+                    ) {
+                        if friendManagement.isLoading {
                             ProgressView()
                                 .frame(maxWidth: .infinity, alignment: .center)
-                        } else if let error = errorMessage {
+                        } else if let error = friendManagement.errorMessage {
                             Text(error)
                                 .foregroundColor(.red)
                                 .frame(maxWidth: .infinity, alignment: .center)
-                        } else if friends.isEmpty {
+                        } else if friendManagement.friends.isEmpty {
                             Text("No friends yet")
                                 .foregroundColor(.gray)
                                 .frame(maxWidth: .infinity, alignment: .center)
                         } else {
-                            ForEach(friends) { friend in
+                            ForEach(friendManagement.friends) { friend in
                                 HStack {
                                     Text(friend.username)
                                     Spacer()
@@ -80,6 +88,16 @@ struct MainView: View {
                     )
                 }
             }
+            .overlay {
+                if showAddFriendModal {
+                    AddFriendModal(
+                        friendManagement: friendManagement,
+                        onClose: {
+                            showAddFriendModal = false
+                        }
+                    )
+                }
+            }
             .onReceive(
                 NotificationCenter.default.publisher(
                     for: NSNotification.Name("MeetingNotification"))
@@ -89,32 +107,21 @@ struct MainView: View {
                 }
             }
             .task {
-                await fetchFriends()
+                await friendManagement.fetchFriends()
             }
         }
     }
 
-    private func fetchFriends() async {
-        isLoading = true
-        errorMessage = nil
-
-        do {
-            friends = try await supabaseService.getFriends()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-
-        isLoading = false
-    }
-
-    func initiateFight(with friend: User) {
+    private func initiateFight(with friend: User) {
         selectedFriend = friend
         navigateToFight = true
     }
 
-    func handleMeetingNotification(_ meeting: Meeting) {
+    private func handleMeetingNotification(_ meeting: Meeting) {
         notificationMeeting = meeting
-        if let fromUserId = friends.first(where: { $0.id.uuidString == meeting.from }) {
+        if let fromUserId = friendManagement.friends.first(where: {
+            $0.id.uuidString == meeting.from
+        }) {
             selectedFriend = fromUserId
         }
         navigateToFight = true

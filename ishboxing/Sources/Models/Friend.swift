@@ -27,3 +27,17 @@ public struct FriendUser: Codable {
         self.username = username
     }
 }
+
+public struct FriendRequest: Codable {
+    public let id: UUID
+    public let user_id: UUID
+    public let friend_id: UUID
+    public let friend: FriendUser
+
+    public init(id: UUID, from: UUID, to: UUID, username: String) {
+        self.id = id
+        self.user_id = from
+        self.friend_id = to
+        self.friend = FriendUser(username: username)
+    }
+}
