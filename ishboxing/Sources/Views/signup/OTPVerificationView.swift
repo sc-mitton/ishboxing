@@ -11,7 +11,8 @@ struct OTPVerificationView: View {
     var body: some View {
         VStack(spacing: 20) {
             Text("Enter verification code")
-                .font(.title)
+                .font(.bangers(size: 28))
+                .foregroundColor(.ishRed)
                 .padding(.top, 50)
 
             Text("We sent a code to \(phoneNumber)")
@@ -37,14 +38,21 @@ struct OTPVerificationView: View {
                     ProgressView()
                 } else {
                     Text("Verify")
+                        .font(.bangers(size: 20))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 24)
+                        .background(Color.ishRed)
+                        .cornerRadius(8)
                 }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(PlainButtonStyle())
             .disabled(otp.count != 6 || isLoading)
 
             Spacer()
         }
         .padding()
+        .background(Color.ishBlue.opacity(0.1))
         .navigationDestination(isPresented: $navigateToUsername) {
             UsernameSetupView()
         }

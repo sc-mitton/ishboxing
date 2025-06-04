@@ -27,7 +27,6 @@ struct ishApp: App {
             NavigationStack {
                 if supabaseService.isAuthenticated {
                     MainView()
-                        .navigationTitle("Ish Boxing")
                 } else {
                     PhoneSignInView()
                 }

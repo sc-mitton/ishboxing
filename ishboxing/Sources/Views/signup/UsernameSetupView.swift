@@ -11,7 +11,8 @@ struct UsernameSetupView: View {
     var body: some View {
         VStack(spacing: 20) {
             Text("Choose a User Name")
-                .font(.title)
+                .font(.bangers(size: 28))
+                .foregroundColor(.ishRed)
                 .padding(.top, 50)
 
             TextField("Username", text: $username)
@@ -35,14 +36,21 @@ struct UsernameSetupView: View {
                     ProgressView()
                 } else {
                     Text("Continue")
+                        .font(.bangers(size: 20))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 24)
+                        .background(Color.ishRed)
+                        .cornerRadius(8)
                 }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(PlainButtonStyle())
             .disabled(username.isEmpty || isLoading)
 
             Spacer()
         }
         .padding()
+        .background(Color.ishBlue.opacity(0.1))
     }
 
     private func setUsername() async {

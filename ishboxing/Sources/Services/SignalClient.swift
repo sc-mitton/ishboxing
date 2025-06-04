@@ -55,7 +55,7 @@ final class SignalClient {
         do {
             let data = try self.encoder.encode(meeting)
             guard
-                let serverURLString = Bundle.main.object(forInfoDictionaryKey: "SERVER_URL")
+                let serverURLString = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL")
                     as? String,
                 let url = URL(string: serverURLString)
             else {

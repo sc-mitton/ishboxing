@@ -12,3 +12,4 @@ Config.xcconfig
 
 supabase/functions/.env
 note.txt
+ngrok.log

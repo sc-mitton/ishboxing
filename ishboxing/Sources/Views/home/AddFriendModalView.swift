@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct AddFriendModal: View {
+struct AddFriendModalView: View {
     @State private var newFriendUsername: String = ""
     @State private var formError: String?
     @State private var isPresented: Bool = false
@@ -26,13 +26,13 @@ struct AddFriendModal: View {
 
             // Modal content
             VStack(spacing: 20) {
-                Text("Add Friend")
-                    .font(.title2)
-                    .bold()
+                Text("Add Friend ")
+                    .font(.bangers(size: 28))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 4)
 
                 TextField("Username", text: $newFriendUsername)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding(.horizontal)
                     .focused($isFocused)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
@@ -51,6 +51,8 @@ struct AddFriendModal: View {
                         onClose()
                     }) {
                         Text("Cancel")
+                            .font(.bangers(size: 20))
+                            .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -61,19 +63,25 @@ struct AddFriendModal: View {
                             await addFriend()
                         }
                     }) {
-                        Text("Add")
+                        Text("Add ")
+                            .font(.bangers(size: 20))
                             .frame(maxWidth: .infinity)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 8)
+                            .background(Color.ishRed)
+                            .cornerRadius(8)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(PlainButtonStyle())
                     .frame(height: 44)
                 }
             }
             .padding()
-            .background(Color(UIColor.systemBackground))
-            .cornerRadius(12)
+            .background(Color.ishBlue)
+            .cornerRadius(16)
             .shadow(radius: 10)
             .padding(.horizontal, 40)
-            .frame(maxWidth: 400)  // Limit maximum width for larger screens
+            .frame(maxWidth: 400)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)  // Ensure ZStack fills screen
