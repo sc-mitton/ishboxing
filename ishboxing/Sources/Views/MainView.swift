@@ -13,7 +13,7 @@ struct MainView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var selectedFriend: User?
-    @State private var showFightInitiation = false
+    @State private var navigateToFight = false
     @State private var notificationMeeting: Meeting?
 
     private var supabaseService = SupabaseService.shared
@@ -72,11 +72,13 @@ struct MainView: View {
                 }
                 .listStyle(InsetGroupedListStyle())
             }
-            .sheet(isPresented: $showFightInitiation) {
-                FightInitiationView(
-                    friend: selectedFriend!,
-                    meeting: notificationMeeting
-                )
+            .navigationDestination(isPresented: $navigateToFight) {
+                if let friend = selectedFriend {
+                    FightInitiationView(
+                        friend: friend,
+                        meeting: notificationMeeting
+                    )
+                }
             }
             .onReceive(
                 NotificationCenter.default.publisher(
@@ -107,7 +109,7 @@ struct MainView: View {
 
     func initiateFight(with friend: User) {
         selectedFriend = friend
-        showFightInitiation = true
+        navigateToFight = true
     }
 
     func handleMeetingNotification(_ meeting: Meeting) {
@@ -115,6 +117,6 @@ struct MainView: View {
         if let fromUserId = friends.first(where: { $0.id.uuidString == meeting.from }) {
             selectedFriend = fromUserId
         }
-        showFightInitiation = true
+        navigateToFight = true
     }
 }

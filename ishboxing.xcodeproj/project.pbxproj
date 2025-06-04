@@ -471,6 +471,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ishboxing/ishboxing.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = J694G989HW;
@@ -478,6 +479,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ishboxing/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Ish Boxing Dev";
 				INFOPLIST_KEY_NSCameraUsageDescription = "\"Ish Boxing requires camera access for game play\"";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Ish Boxing requires microphone access for game play\"";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -490,7 +492,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxing;
+				PRODUCT_BUNDLE_IDENTIFIER = com.northof69labs.ishboxing.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -504,6 +506,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ishboxing/ishboxing.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = J694G989HW;
@@ -511,6 +514,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ishboxing/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Ish Boxing";
 				INFOPLIST_KEY_NSCameraUsageDescription = "\"Ish Boxing requires camera access for game play\"";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Ish Boxing requires microphone access for game play\"";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

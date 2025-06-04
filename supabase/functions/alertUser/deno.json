@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@fivesheepco/cloudflare-apns2": "jsr:@fivesheepco/cloudflare-apns2",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
+  }
+}

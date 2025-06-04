@@ -8,6 +8,7 @@ class SupabaseService: ObservableObject {
     private var channel: RealtimeChannelV2!
     weak var delegate: SupabaseServiceDelegate?
     static let shared = SupabaseService()
+    @Published var isAuthenticated = false
 
     init() {
         guard let supabaseURL = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String,
@@ -22,6 +23,15 @@ class SupabaseService: ObservableObject {
             supabaseURL: URL(string: updatedSupabaseURL)!,
             supabaseKey: supabaseKey
         )
+
+        // Set up auth state change listener
+        Task {
+            for await (_, session) in client.auth.authStateChanges {
+                await MainActor.run {
+                    self.isAuthenticated = session != nil
+                }
+            }
+        }
     }
 
     func hasSession() async throws -> Bool {
@@ -99,7 +109,7 @@ class SupabaseService: ObservableObject {
     func updateUsername(_ username: String) async throws {
         let session = try await client.auth.session
         let userId = session.user.id
-        try await client.from("public.profiles")
+        try await client.from("profiles")
             .update(["username": username])
             .eq("id", value: userId)
             .execute()
@@ -112,8 +122,8 @@ class SupabaseService: ObservableObject {
         // Fetch friends where the current user is either user_id or friend_id
         let response =
             try await client
-            .from("auth.friends")
-            .select("id, friend:friend_id(username)")
+            .from("friends")
+            .select("friend_id, profiles:friend_id(username)")
             .eq("user_id", value: userId)
             .execute()
 

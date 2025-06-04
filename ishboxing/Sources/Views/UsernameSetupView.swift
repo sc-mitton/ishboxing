@@ -10,7 +10,7 @@ struct UsernameSetupView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Choose a username")
+            Text("Choose a User Name")
                 .font(.title)
                 .padding(.top, 50)
 
@@ -18,6 +18,7 @@ struct UsernameSetupView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding(.horizontal)
                 .autocapitalization(.none)
+                .autocorrectionDisabled(true)
 
             if let error = errorMessage {
                 Text(error)
@@ -42,9 +43,6 @@ struct UsernameSetupView: View {
             Spacer()
         }
         .padding()
-        .navigationDestination(isPresented: $showMainView) {
-            MainView()
-        }
     }
 
     private func setUsername() async {

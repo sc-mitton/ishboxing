@@ -5,7 +5,7 @@ struct PhoneSignInView: View {
     @State private var phoneNumber = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showOTPView = false
+    @State private var navigateToOTP = false
 
     init() {
         self.supabaseService = SupabaseService.shared
@@ -29,7 +29,7 @@ struct PhoneSignInView: View {
 
     var e164PhoneNumber: String {
         let numbers = phoneNumber.filter { $0.isNumber }
-        return "+1" + numbers
+        return "1" + numbers
     }
 
     var body: some View {
@@ -72,7 +72,7 @@ struct PhoneSignInView: View {
             Spacer()
         }
         .padding()
-        .navigationDestination(isPresented: $showOTPView) {
+        .navigationDestination(isPresented: $navigateToOTP) {
             OTPVerificationView(phoneNumber: e164PhoneNumber)
         }
     }
@@ -83,7 +83,7 @@ struct PhoneSignInView: View {
 
         do {
             try await supabaseService.signInWithPhoneNumber(e164PhoneNumber)
-            showOTPView = true
+            navigateToOTP = true
         } catch {
             errorMessage = error.localizedDescription
         }

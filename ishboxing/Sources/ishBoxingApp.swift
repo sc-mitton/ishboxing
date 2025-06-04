@@ -15,7 +15,6 @@ import WebRTC
 struct ishApp: App {
     private let config = WebRTCConfig.default
     @StateObject private var supabaseService = SupabaseService.shared
-    @State private var isAuthenticated = false
     @State private var currentMeeting: Meeting?
 
     init() {
@@ -25,20 +24,13 @@ struct ishApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
-                if isAuthenticated {
+            NavigationStack {
+                if supabaseService.isAuthenticated {
                     MainView()
                         .navigationTitle("Ish")
                         .navigationBarTitleDisplayMode(.large)
                 } else {
                     PhoneSignInView()
-                }
-            }
-            .task {
-                // Check if user is already authenticated
-                let service = supabaseService
-                if (try? await service.hasSession()) == true {
-                    isAuthenticated = true
                 }
             }
         }

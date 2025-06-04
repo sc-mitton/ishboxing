@@ -2,10 +2,13 @@ node_modules
 .DS_Store
 .env
 .env.local
+.env.production
 .env.development.local
 .env.test.local
 .env.production.local
 Config.xcconfig
 .DS_Store
+.envrc
 
 supabase/functions/.env
+note.txt

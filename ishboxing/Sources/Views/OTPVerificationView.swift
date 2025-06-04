@@ -6,7 +6,7 @@ struct OTPVerificationView: View {
     @State private var otp = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showUsernameView = false
+    @State private var navigateToUsername = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -45,7 +45,7 @@ struct OTPVerificationView: View {
             Spacer()
         }
         .padding()
-        .navigationDestination(isPresented: $showUsernameView) {
+        .navigationDestination(isPresented: $navigateToUsername) {
             UsernameSetupView()
         }
     }
@@ -56,7 +56,7 @@ struct OTPVerificationView: View {
 
         do {
             try await supabaseService.verifyOTP(phoneNumber: phoneNumber, token: otp)
-            showUsernameView = true
+            navigateToUsername = true
         } catch {
             errorMessage = error.localizedDescription
         }
