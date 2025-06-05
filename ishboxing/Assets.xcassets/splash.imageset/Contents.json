@@ -12,6 +12,22 @@
     {
       "idiom" : "universal",
       "scale" : "3x"
+    },
+    {
+      "filename" : "splash.png 19-47-49-990.png",
+      "idiom" : "universal",
+      "scale" : "1x",
+      "width-class" : "regular"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "2x",
+      "width-class" : "regular"
+    },
+    {
+      "idiom" : "universal",
+      "scale" : "3x",
+      "width-class" : "regular"
     }
   ],
   "info" : {
