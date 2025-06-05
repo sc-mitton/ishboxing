@@ -5,10 +5,12 @@ struct PhoneSignInView: View {
     @State private var phoneNumber = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var navigateToOTP = false
+    @Binding var navigationPath: NavigationPath
+    @FocusState private var isPhoneNumberFocused: Bool
 
-    init() {
+    init(navigationPath: Binding<NavigationPath>) {
         self.supabaseService = SupabaseService.shared
+        self._navigationPath = navigationPath
     }
 
     var formattedPhoneNumber: String {
@@ -29,51 +31,74 @@ struct PhoneSignInView: View {
 
     var e164PhoneNumber: String {
         let numbers = phoneNumber.filter { $0.isNumber }
-        return "1" + numbers
+        return "+1" + numbers
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Enter your phone number")
-                .font(.title)
-                .padding(.top, 50)
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                if geometry.size.height > 800 {  // iPad-like height
+                    Spacer()
+                }
 
-            TextField("(555) 555-5555", text: $phoneNumber)
-                .keyboardType(.phonePad)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-                .onReceive(phoneNumber.publisher) { newValue in
-                    let filtered = String(newValue).filter { $0.isNumber }
-                    if filtered.count <= 10 {
-                        phoneNumber = formattedPhoneNumber
+                Text("Enter your phone number")
+                    .font(.bangers(size: 28))
+                    .foregroundColor(.ishRed)
+                    .padding(.top, geometry.size.height > 800 ? 0 : 50)
+
+                VStack(spacing: 20) {
+                    TextField("(555) 555-5555", text: $phoneNumber)
+                        .keyboardType(.phonePad)
+                        .textFieldStyle(.custom)
+                        .padding(.vertical, 12)
+                        .focused($isPhoneNumberFocused)
+                        .onReceive(phoneNumber.publisher) { newValue in
+                            let filtered = String(newValue).filter { $0.isNumber }
+                            if filtered.count <= 10 {
+                                phoneNumber = formattedPhoneNumber
+                            }
+                        }
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
                     }
-                }
 
-            if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-
-            Button(action: {
-                Task {
-                    await signIn()
+                    Button(action: {
+                        Task {
+                            await signIn()
+                        }
+                    }) {
+                        if isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Continue")
+                                .font(.bangers(size: 20))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.ishRed)
+                                .cornerRadius(8)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(phoneNumber.filter { $0.isNumber }.count != 10 || isLoading)
                 }
-            }) {
-                if isLoading {
-                    ProgressView()
+                .frame(maxWidth: 400)
+                .frame(maxWidth: .infinity)
+
+                if geometry.size.height > 800 {  // iPad-like height
+                    Spacer()
                 } else {
-                    Text("Continue")
+                    Spacer()
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(phoneNumber.filter { $0.isNumber }.count != 10 || isLoading)
-
-            Spacer()
+            .padding()
+            .background(Color.ishBlue.opacity(0.1))
         }
-        .padding()
-        .navigationDestination(isPresented: $navigateToOTP) {
-            OTPVerificationView(phoneNumber: e164PhoneNumber)
+        .onAppear {
+            isPhoneNumberFocused = true
         }
     }
 
@@ -83,7 +108,9 @@ struct PhoneSignInView: View {
 
         do {
             try await supabaseService.signInWithPhoneNumber(e164PhoneNumber)
-            navigateToOTP = true
+            await MainActor.run {
+                navigationPath.append(OTPRoute(phoneNumber: phoneNumber))
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

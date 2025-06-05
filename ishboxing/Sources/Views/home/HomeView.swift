@@ -18,7 +18,7 @@ struct MainView: View {
     @State private var addFriendError: String?
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Full background gradient
                 LinearGradient(
@@ -71,16 +71,6 @@ struct MainView: View {
                     FightInitiationView(
                         friend: friend,
                         meeting: notificationMeeting
-                    )
-                }
-            }
-            .overlay {
-                if showAddFriendModalView {
-                    AddFriendModalView(
-                        friendManagement: friendManagement,
-                        onClose: {
-                            showAddFriendModalView = false
-                        }
                     )
                 }
             }

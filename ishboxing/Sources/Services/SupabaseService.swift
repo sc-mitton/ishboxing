@@ -8,6 +8,7 @@ class SupabaseService: ObservableObject {
     private var channel: RealtimeChannelV2!
     weak var delegate: SupabaseServiceDelegate?
     static let shared = SupabaseService()
+    static let serverURL = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String
     @Published var isAuthenticated = false
 
     init() {

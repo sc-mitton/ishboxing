@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AddFriendModalView: View {
+    @Environment(\.dismiss) var dismiss
     @State private var newFriendUsername: String = ""
     @State private var formError: String?
     @State private var isPresented: Bool = false
@@ -18,11 +19,16 @@ struct AddFriendModalView: View {
         ZStack {
             // Overlay
             Color.black.opacity(0.7)
+                .frame(
+                    width: UIScreen.main.bounds.width * 3, height: UIScreen.main.bounds.height * 3
+                )
                 .ignoresSafeArea()
                 .onTapGesture {
                     isPresented = false
                     onClose()
                 }
+                .transition(.opacity)
+                .opacity(isPresented ? 1 : 0)
 
             // Modal content
             VStack(spacing: 20) {
@@ -81,8 +87,10 @@ struct AddFriendModalView: View {
             .cornerRadius(16)
             .shadow(radius: 10)
             .padding(.horizontal, 40)
+            .padding(.vertical, 20)
             .frame(maxWidth: 400)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .opacity(isPresented ? 1 : 0)
+            .scaleEffect(isPresented ? 1 : 0.95)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)  // Ensure ZStack fills screen
         .onAppear {
@@ -90,6 +98,9 @@ struct AddFriendModalView: View {
                 isFocused = true
             }
         }
+        .ignoresSafeArea()
+        .onAppear { isPresented = true }
+        .onDisappear { isPresented = false }
     }
 
     private func addFriend() async {

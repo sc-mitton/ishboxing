@@ -6,51 +6,73 @@ struct UsernameSetupView: View {
     @State private var username = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var showMainView = false
+    @Binding var navigationPath: NavigationPath
+    @FocusState private var isUsernameFocused: Bool
+
+    init(navigationPath: Binding<NavigationPath>) {
+        self._navigationPath = navigationPath
+    }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Choose a User Name")
-                .font(.bangers(size: 28))
-                .foregroundColor(.ishRed)
-                .padding(.top, 50)
-
-            TextField("Username", text: $username)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal)
-                .autocapitalization(.none)
-                .autocorrectionDisabled(true)
-
-            if let error = errorMessage {
-                Text(error)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
-
-            Button(action: {
-                Task {
-                    await setUsername()
+        GeometryReader { geometry in
+            VStack(spacing: 20) {
+                if geometry.size.height > 800 {  // iPad-like height
+                    Spacer()
                 }
-            }) {
-                if isLoading {
-                    ProgressView()
+
+                Text("Choose a User Name ")
+                    .font(.bangers(size: 28))
+                    .foregroundColor(.ishRed)
+                    .padding(.top, geometry.size.height > 800 ? 0 : 50)
+
+                VStack(spacing: 20) {
+                    TextField("Username", text: $username)
+                        .textFieldStyle(.custom)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled(true)
+                        .focused($isUsernameFocused)
+
+                    if let error = errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
+
+                    Button(action: {
+                        Task {
+                            await setUsername()
+                        }
+                    }) {
+                        if isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Continue")
+                                .font(.bangers(size: 20))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.ishRed)
+                                .cornerRadius(8)
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .disabled(username.isEmpty || isLoading)
+                }
+                .frame(maxWidth: 400)
+                .frame(maxWidth: .infinity)
+
+                if geometry.size.height > 800 {  // iPad-like height
+                    Spacer()
                 } else {
-                    Text("Continue")
-                        .font(.bangers(size: 20))
-                        .foregroundColor(.white)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 24)
-                        .background(Color.ishRed)
-                        .cornerRadius(8)
+                    Spacer()
                 }
             }
-            .buttonStyle(PlainButtonStyle())
-            .disabled(username.isEmpty || isLoading)
-
-            Spacer()
+            .padding()
+            .background(Color.ishBlue.opacity(0.1))
         }
-        .padding()
-        .background(Color.ishBlue.opacity(0.1))
+        .onAppear {
+            isUsernameFocused = true
+        }
     }
 
     private func setUsername() async {
@@ -59,7 +81,10 @@ struct UsernameSetupView: View {
 
         do {
             try await supabaseService.updateUsername(username)
-            showMainView = true
+            await MainActor.run {
+                supabaseService.isAuthenticated = true
+                navigationPath.removeLast(navigationPath.count)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

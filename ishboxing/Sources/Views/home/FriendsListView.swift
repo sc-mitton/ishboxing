@@ -72,15 +72,14 @@ struct FriendsListView: View {
         .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: -4)
         .frame(maxHeight: .infinity)
         .ignoresSafeArea(edges: .bottom)
-        .overlay {
-            if showAddFriendModalView {
-                AddFriendModalView(
-                    friendManagement: friendManagement,
-                    onClose: {
-                        showAddFriendModalView = false
-                    }
-                )
-            }
+        .fullScreenCover(isPresented: $showAddFriendModalView) {
+            AddFriendModalView(
+                friendManagement: friendManagement,
+                onClose: {
+                    showAddFriendModalView = false
+                }
+            )
+            .presentationBackground(.clear)
         }
     }
 }

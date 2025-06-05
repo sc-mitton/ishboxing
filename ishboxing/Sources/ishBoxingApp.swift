@@ -11,11 +11,16 @@ import SwiftUI
 import UserNotifications
 import WebRTC
 
+struct OTPRoute: Hashable {
+    let phoneNumber: String
+}
+
 @main
 struct ishApp: App {
     private let config = WebRTCConfig.default
     @StateObject private var supabaseService = SupabaseService.shared
     @State private var currentMeeting: Meeting?
+    @State private var navigationPath = NavigationPath()
 
     init() {
         requestPermissionsIfNeeded()
@@ -24,11 +29,26 @@ struct ishApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                if supabaseService.isAuthenticated {
-                    MainView()
-                } else {
-                    PhoneSignInView()
+            NavigationStack(path: $navigationPath) {
+                Group {
+                    if supabaseService.isAuthenticated {
+                        MainView()
+                            .navigationBarBackButtonHidden(true)
+                    } else {
+                        PhoneSignInView(navigationPath: $navigationPath)
+                    }
+                }
+                .navigationDestination(for: String.self) { route in
+                    switch route {
+                    case "username":
+                        UsernameSetupView(navigationPath: $navigationPath)
+                    default:
+                        EmptyView()
+                    }
+                }
+                .navigationDestination(for: OTPRoute.self) { route in
+                    OTPVerificationView(
+                        phoneNumber: route.phoneNumber, navigationPath: $navigationPath)
                 }
             }
         }

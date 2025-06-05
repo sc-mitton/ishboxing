@@ -192,6 +192,7 @@ max_frequency = "5s"
 [auth.sms.test_otp]
 enabled = true
 19072012419 = "123456"
+16027901822 = "123456"
 
 [auth.sms.vonage]
 enabled = true
