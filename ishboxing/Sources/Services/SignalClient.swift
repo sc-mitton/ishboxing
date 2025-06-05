@@ -11,6 +11,10 @@ protocol SignalClientDelegate: AnyObject {
         _ signalClient: SignalClient, didStateChange state: RTCIceConnectionState)
 }
 
+struct Response: Decodable {
+    let status: Int
+}
+
 final class SignalClient {
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
@@ -35,45 +39,36 @@ final class SignalClient {
         self.webRTCClient.delegate = self
     }
 
-    func joinMeeting(_ meeting: Meeting) async {
-        self.channelId = meeting.id
+    func joinFight(_ fight: Fight) async {
+        self.channelId = fight.id
         await self.supabase.openSocketChannel(self.channelId)
         startConnectionTimeoutTimer()
     }
 
-    func joinMeeting(with userId: String) async {
+    func startFight(with userId: String) async {
         self.channelId = UUID().uuidString
-        let meeting = Meeting(from: self.userId, to: userId, id: self.channelId)
-        await self.supabase.openSocketChannel(meeting.id)
+        let fight = Fight(from: self.userId, to: userId, id: self.channelId)
+        await self.supabase.openSocketChannel(fight.id)
         startConnectionTimeoutTimer()
-        await notifyUser(meeting: meeting)
+        await notifyUser(fight: fight)
     }
 
-    func notifyUser(meeting: Meeting) async {
-        // Send initial meeting request via HTTP
-        let meeting = Meeting(from: self.userId, to: userId, id: self.channelId)
+    func notifyUser(fight: Fight) async {
+        // Send initial fight request via Supabase Functions
         do {
-            let data = try self.encoder.encode(meeting)
-            guard
-                let serverURLString = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL")
-                    as? String,
-                let url = URL(string: serverURLString)
-            else {
-                throw SignalError.invalidServerURL
-            }
+            let data = try self.encoder.encode(fight)
+            let response: Response = try await self.supabase.client.functions.invoke(
+                "alertUser",
+                options: FunctionInvokeOptions(
+                    headers: [
+                        "Authorization": "Bearer \(self.supabase.client.auth.session.accessToken)"
+                    ],
+                    body: data
+                )
+            )
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.httpBody = data
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw SignalError.invalidResponse
-            }
-
-            guard httpResponse.statusCode == 200 else {
-                throw SignalError.serverError(statusCode: httpResponse.statusCode)
+            guard response.status == 200 else {
+                throw SignalError.serverError(statusCode: response.status)
             }
         } catch {
             delegate?.signalClient(self, didError: error)

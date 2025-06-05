@@ -125,7 +125,8 @@ class SupabaseService: ObservableObject {
             try await client
             .from("friends")
             .select("friend_id, profiles:friend_id(username)")
-            .eq("user_id", value: userId)
+            .eq("user_id", value: userId.uuidString.lowercased())
+            .eq("confirmed", value: true)
             .execute()
 
         // Parse the response and create Friend objects
@@ -138,13 +139,14 @@ class SupabaseService: ObservableObject {
         }
     }
 
-    func addFriend(_ friendId: String) async throws {
+    func addFriend(_ username: String) async throws {
         let session = try await client.auth.session
         let userId = session.user.id
+        print("Adding friend, request body: \(["username": username, "from": userId.uuidString])")
         try await client.functions.invoke(
             "addFriend",
             options: FunctionInvokeOptions(
-                body: ["friend_id": friendId, "from": userId.uuidString]
+                body: ["username": username, "from": userId.uuidString]
             ))
     }
 
@@ -175,6 +177,22 @@ class SupabaseService: ObservableObject {
             .eq("confirmed", value: false)
             .execute()
         return try JSONDecoder().decode([FriendRequest].self, from: response.data)
+    }
+
+    func saveAPNToken(token: String, deviceId: String) async throws {
+        let session = try await client.auth.session
+        let userId = session.user.id
+
+        try await client
+            .from("apn_tokens")
+            .upsert(
+                [
+                    "user_id": userId.uuidString,
+                    "token": token,
+                    "device_id": deviceId,
+                ], onConflict: "user_id,device_id"
+            )
+            .execute()
     }
 }
 

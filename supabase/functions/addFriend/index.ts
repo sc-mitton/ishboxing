@@ -4,7 +4,7 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import {
   ApnsClient,
   Notification,
@@ -12,6 +12,7 @@ import {
   PushType,
 } from "@fivesheepco/cloudflare-apns2";
 
+// Environment variables
 const apnSecret = Deno.env.get("APN_SECRET");
 const teamId = Deno.env.get("APPLE_TEAM_ID");
 const keyId = Deno.env.get("APPLE_KEY_ID");
@@ -20,6 +21,7 @@ const apnTopic = Deno.env.get("APN_TOPIC");
 const supabaseUrl = Deno.env.get("SUPABASE_URL");
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+// Validate environment variables
 if (
   !apnSecret ||
   !teamId ||
@@ -34,8 +36,7 @@ if (
   );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
+// Initialize APNS client
 const client = new ApnsClient({
   team: teamId,
   keyId: keyId,
@@ -44,49 +45,56 @@ const client = new ApnsClient({
   defaultTopic: apnTopic,
 });
 
+// Types
 interface FriendRequest {
-  friend_id: string;
+  username: string;
   from: string;
 }
 
+interface UserProfile {
+  id: string;
+  username: string;
+  apn_tokens: { token: string }[];
+}
+
+// Type guards
 const isFriendRequest = (data: unknown): data is FriendRequest => {
   return (
     typeof data === "object" &&
     data !== null &&
-    "friend_id" in data &&
-    "from" in data
+    "username" in data &&
+    "from" in data &&
+    typeof (data as FriendRequest).username === "string" &&
+    typeof (data as FriendRequest).from === "string"
   );
 };
 
-const sendFriendRequestNotification = async (request: FriendRequest) => {
-  // Fetch both users' data in a single query
-  const { data: users, error } = await supabase
-    .from("profiles")
-    .select("id, username, apn_tokens!inner(token)")
-    .in("id", [request.from, request.friend_id]);
+// Helper functions
+const createSupabaseClient = (req: Request): SupabaseClient => {
+  const authHeader = req.headers.get("Authorization");
+  const token = authHeader?.split(" ")[1];
+  return createClient(supabaseUrl, token ?? "", {
+    global: {
+      headers: { Authorization: req.headers.get("Authorization") ?? "" },
+    },
+  });
+};
 
-  if (error) {
-    console.error("Error fetching users:", error);
-    throw error;
-  }
-
-  const fromUser = users.find((u) => u.id === request.from);
-  const toUser = users.find((u) => u.id === request.friend_id);
-
-  if (!fromUser || !toUser) {
-    throw new Error("Could not find both users");
-  }
-
-  const notification = new Notification(toUser.apn_tokens[0].token, {
+const sendFriendRequestNotification = async (
+  fromUsername: string,
+  toUsername: string,
+  apnToken: string,
+): Promise<void> => {
+  const notification = new Notification(apnToken, {
     type: PushType.alert,
     alert: {
       title: "New Friend Request",
-      body: `${fromUser.username} wants to be your friend`,
+      body: `${fromUsername} wants to be your friend`,
     },
     data: {
       type: "friend_request",
-      from: request.from,
-      to: request.friend_id,
+      from: fromUsername,
+      to: toUsername,
     },
     priority: Priority.low,
     sound: "default",
@@ -96,8 +104,7 @@ const sendFriendRequestNotification = async (request: FriendRequest) => {
   await client.send(notification);
 };
 
-console.log("Hello from Functions!");
-
+// Main handler
 Deno.serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
@@ -108,13 +115,31 @@ Deno.serve(async (req) => {
     if (!isFriendRequest(data)) {
       return new Response("Invalid payload", { status: 400 });
     }
+    const supabaseClient = createSupabaseClient(req);
+    // Fetch both users' data in a single query
+    const { data: users, error } = await supabaseClient
+      .from("profiles")
+      .select("id, username, apn_tokens!inner(token)")
+      .in("username", [data.username, data.from]);
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      return new Response("Error fetching users", { status: 500 });
+    }
+
+    const fromUser = users.find((u: UserProfile) => u.username === data.from);
+    const toUser = users.find((u: UserProfile) => u.username === data.username);
+
+    if (!fromUser || !toUser) {
+      return new Response("One or both users not found", { status: 404 });
+    }
 
     // Create the friendship relationship
-    const { error: friendshipError } = await supabase
+    const { error: friendshipError } = await supabaseClient
       .from("friends")
       .insert({
-        user_id: data.from,
-        friend_id: data.friend_id,
+        user_id: fromUser.id,
+        friend_id: toUser.id,
         confirmed: false,
       });
 
@@ -123,17 +148,16 @@ Deno.serve(async (req) => {
       return new Response("Error creating friendship", { status: 500 });
     }
 
-    // Send push notification
-    try {
-      await sendFriendRequestNotification(data);
-    } catch (notificationError) {
-      console.error("Error sending notification:", notificationError);
-      // Don't return error here since the friendship was created successfully
-    }
+    // Send push notification - if this fails, we still return success since friendship was created
+    await sendFriendRequestNotification(
+      fromUser.username,
+      toUser.username,
+      toUser.apn_tokens[0].token,
+    );
 
     return new Response("Friend request sent", { status: 200 });
   } catch (err) {
-    console.error(err);
+    console.error("Unexpected error:", err);
     return new Response("Internal Server Error", { status: 500 });
   }
 });

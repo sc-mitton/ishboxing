@@ -3,26 +3,26 @@ import Supabase
 import SwiftUI
 import WebRTC
 
-struct FightInitiationView: View {
+struct FightView: View {
     let friend: User
-    let meeting: Meeting?
+    let fight: Fight?
     let supabaseService = SupabaseService.shared
     let webRTCClient: WebRTCClient
 
-    @StateObject private var viewModel: FightInitiationViewModel
+    @StateObject private var viewModel: FightViewModel
 
-    init(friend: User, meeting: Meeting?) {
-        self.meeting = meeting
+    init(friend: User, fight: Fight?) {
+        self.fight = fight
         self.friend = friend
 
         self.webRTCClient = WebRTCClient(iceServers: WebRTCConfig.default.iceServers)
         let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
 
         self._viewModel = StateObject(
-            wrappedValue: FightInitiationViewModel(
+            wrappedValue: FightViewModel(
                 signalClient: signalClient,
                 friend: friend,
-                meeting: meeting
+                fight: fight
             ))
     }
 
@@ -31,7 +31,7 @@ struct FightInitiationView: View {
             VStack(spacing: 20) {
             }
             .padding()
-            .navigationTitle("Fight Initiation")
+            .navigationTitle("Fight")
             .navigationBarTitleDisplayMode(.inline)
         }
     }

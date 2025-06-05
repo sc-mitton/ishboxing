@@ -1,5 +1,5 @@
 //
-//  ishApp.swift
+//  ishBoxingApp.swift
 //  ish
 //
 //  Created by Spencer Mitton on 4/30/25.
@@ -16,16 +16,13 @@ struct OTPRoute: Hashable {
 }
 
 @main
-struct ishApp: App {
+struct ishBoxingApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
     private let config = WebRTCConfig.default
     @StateObject private var supabaseService = SupabaseService.shared
-    @State private var currentMeeting: Meeting?
+    @State private var currentFight: Fight?
     @State private var navigationPath = NavigationPath()
-
-    init() {
-        requestPermissionsIfNeeded()
-        registerForPushNotifications()
-    }
 
     var body: some Scene {
         WindowGroup {
@@ -54,33 +51,8 @@ struct ishApp: App {
         }
     }
 
-    private func didReceiveRemoteNotification(meetingNotification: MeetingNotification) {
-        currentMeeting = meetingNotification.meeting
-    }
-
-    private func registerForPushNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
-            granted, error in
-            if granted {
-                DispatchQueue.main.async {
-                    UIApplication.shared.registerForRemoteNotifications()
-                }
-            }
-        }
-    }
-
-    private func requestPermissionsIfNeeded() {
-        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                print("Camera permission: \(granted)")
-            }
-        }
-
-        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .audio) { granted in
-                print("Microphone permission: \(granted)")
-            }
-        }
+    private func didReceiveRemoteNotification(fightNotification: FightNotification) {
+        currentFight = fightNotification.fight
     }
 }
 
@@ -90,8 +62,8 @@ struct ishApp: App {
     @_exported import Inject
 #endif
 
-extension Meeting: Equatable {
-    public static func == (lhs: Meeting, rhs: Meeting) -> Bool {
+extension Fight: Equatable {
+    public static func == (lhs: Fight, rhs: Fight) -> Bool {
         lhs.id == rhs.id
     }
 }

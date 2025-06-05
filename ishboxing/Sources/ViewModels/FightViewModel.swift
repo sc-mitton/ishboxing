@@ -1,18 +1,18 @@
 import Foundation
 import WebRTC
 
-protocol FightInitiationViewModelDelegate: AnyObject {
+protocol FightViewModelDelegate: AnyObject {
     func didConnect()
     func didDisconnect()
     func didTimeout()
     func didError(_ error: Error)
 }
 
-class FightInitiationViewModel: ObservableObject {
+class FightViewModel: ObservableObject {
     private let friend: User
     private let signalClient: SignalClient
-    private let meeting: Meeting?
-    weak var delegate: FightInitiationViewModelDelegate?
+    private let fight: Fight?
+    weak var delegate: FightViewModelDelegate?
 
     @Published var errorMessage: String?
     @Published var hasTimedOut = false
@@ -21,11 +21,11 @@ class FightInitiationViewModel: ObservableObject {
     init(
         signalClient: SignalClient,
         friend: User,
-        meeting: Meeting?
+        fight: Fight?
     ) {
         self.friend = friend
         self.signalClient = signalClient
-        self.meeting = meeting
+        self.fight = fight
         self.signalClient.delegate = self
 
         Task {
@@ -34,15 +34,15 @@ class FightInitiationViewModel: ObservableObject {
     }
 
     func connect() async {
-        if let meeting = meeting {
-            await signalClient.joinMeeting(meeting)
+        if let fight = fight {
+            await signalClient.joinFight(fight)
         } else {
-            await signalClient.joinMeeting(with: friend.id.uuidString)
+            await signalClient.startFight(with: friend.id.uuidString)
         }
     }
 }
 
-extension FightInitiationViewModel: SignalClientDelegate {
+extension FightViewModel: SignalClientDelegate {
     func signalClient(_ signalClient: SignalClient, didStateChange state: RTCIceConnectionState) {
         webRTCConnectionState = state
     }

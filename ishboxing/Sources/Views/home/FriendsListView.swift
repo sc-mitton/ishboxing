@@ -11,7 +11,7 @@ struct FriendsListView: View {
                 Section(
                     header:
                         HStack {
-                            Text("Your Friends")
+                            Text("Friends")
                                 .font(.bangers(size: 22))
                                 .foregroundColor(.ishRed)
                             Spacer()
@@ -34,12 +34,42 @@ struct FriendsListView: View {
                             .foregroundColor(.red)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
-                    } else if friendManagement.friends.isEmpty {
+                    } else if friendManagement.friends.isEmpty
+                        && friendManagement.pendingFriendRequests.isEmpty
+                    {
                         Text("No friends yet")
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
                     } else {
+                        // Show pending friend requests first
+                        ForEach(friendManagement.pendingFriendRequests, id: \.id) { request in
+                            HStack {
+                                Text(request.friend.username)
+                                    .font(.headline)
+                                Spacer()
+                                Button(action: {
+                                    Task {
+                                        try? await friendManagement.confirmFriendRequest(request)
+                                    }
+                                }) {
+                                    Text("Confirm")
+                                        .font(.bangers(size: 20))
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 8)
+                                        .background(Color.ishRed)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(12)
+                                        .shadow(
+                                            color: .ishRed.opacity(0.3), radius: 4, x: 0,
+                                            y: 2)
+                                }
+                            }
+                            .padding()
+                            .background(Color.white)
+                        }
+
+                        // Then show confirmed friends
                         ForEach(friendManagement.friends) { friend in
                             HStack {
                                 Text(friend.username)
@@ -80,6 +110,9 @@ struct FriendsListView: View {
                 }
             )
             .presentationBackground(.clear)
+            .transaction { transaction in
+                transaction.disablesAnimations = true
+            }
         }
     }
 }

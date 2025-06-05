@@ -2,6 +2,7 @@ import SwiftUI
 
 class FriendManagement: ObservableObject {
     @Published var friends: [User] = []
+    @Published var pendingFriendRequests: [FriendRequest] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -13,6 +14,7 @@ class FriendManagement: ObservableObject {
 
         do {
             friends = try await supabaseService.getFriends()
+            pendingFriendRequests = try await supabaseService.getPendingFriendRequests()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -24,8 +26,17 @@ class FriendManagement: ObservableObject {
         guard !username.isEmpty else {
             throw FriendError.emptyUsername
         }
-
         try await supabaseService.addFriend(username)
+        await fetchFriends()  // Refresh the friends list
+    }
+
+    func confirmFriendRequest(_ request: FriendRequest) async throws {
+        try await supabaseService.confirmFriendship(request.id.uuidString)
+        await fetchFriends()  // Refresh the friends list
+    }
+
+    func denyFriendRequest(_ request: FriendRequest) async throws {
+        try await supabaseService.denyFriendship(request.id.uuidString)
         await fetchFriends()  // Refresh the friends list
     }
 }

@@ -4,7 +4,7 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import {
   ApnsClient,
   Notification,
@@ -34,8 +34,6 @@ if (
   );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 const client = new ApnsClient({
   team: teamId,
   keyId: keyId,
@@ -61,6 +59,7 @@ const isConfirmRequest = (data: unknown): data is ConfirmRequest => {
 const sendConfirmationNotification = async (
   friendshipId: string,
   userId: string,
+  supabase: SupabaseClient,
 ) => {
   // First get the friendship details
   const { data: friendship, error: friendshipError } = await supabase
@@ -128,8 +127,16 @@ Deno.serve(async (req) => {
       return new Response("Invalid payload", { status: 400 });
     }
 
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.split(" ")[1];
+    const supabaseClient = createClient(supabaseUrl, token ?? "", {
+      global: {
+        headers: { Authorization: req.headers.get("Authorization") ?? "" },
+      },
+    });
+
     // Update the friendship to confirmed
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from("friends")
       .update({ confirmed: true })
       .eq("id", data.friendship_id)
@@ -142,10 +149,13 @@ Deno.serve(async (req) => {
 
     // Send notification to the original requester
     try {
-      await sendConfirmationNotification(data.friendship_id, data.user_id);
+      await sendConfirmationNotification(
+        data.friendship_id,
+        data.user_id,
+        supabaseClient,
+      );
     } catch (notificationError) {
       console.error("Error sending notification:", notificationError);
-      // Don't return error here since the friendship was confirmed successfully
     }
 
     return new Response("Friendship confirmed", { status: 200 });

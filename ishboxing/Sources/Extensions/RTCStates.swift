@@ -1,5 +1,5 @@
 //
-//  ishApp.swift
+//  ishBoxingApp.swift
 //  ish
 //
 //  Created by Spencer Mitton on 4/30/25.

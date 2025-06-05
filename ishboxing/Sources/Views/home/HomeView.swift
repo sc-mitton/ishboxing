@@ -1,18 +1,20 @@
 //
-//  ishApp.swift
+//  ishBoxingApp.swift
 //  ish
 //
 //  Created by Spencer Mitton on 4/30/25.
 //
 
+import AVFoundation
 import SwiftUI
+import UserNotifications
 import WebRTC
 
 struct MainView: View {
     @StateObject private var friendManagement = FriendManagement()
     @State private var selectedFriend: User?
     @State private var navigateToFight = false
-    @State private var notificationMeeting: Meeting?
+    @State private var notificationFight: Fight?
     @State private var showAddFriendModalView = false
     @State private var newFriendUsername = ""
     @State private var addFriendError: String?
@@ -68,22 +70,26 @@ struct MainView: View {
             }
             .navigationDestination(isPresented: $navigateToFight) {
                 if let friend = selectedFriend {
-                    FightInitiationView(
+                    FightView(
                         friend: friend,
-                        meeting: notificationMeeting
+                        fight: notificationFight
                     )
                 }
             }
             .onReceive(
                 NotificationCenter.default.publisher(
-                    for: NSNotification.Name("MeetingNotification"))
+                    for: NSNotification.Name("FightNotification"))
             ) { notification in
-                if let meeting = notification.userInfo?["meeting"] as? Meeting {
-                    handleMeetingNotification(meeting)
+                if let fight = notification.userInfo?["fight"] as? Fight {
+                    handleFightNotification(fight)
                 }
             }
             .task {
                 await friendManagement.fetchFriends()
+            }
+            .onAppear {
+                requestPermissionsIfNeeded()
+                registerForPushNotifications()
             }
         }
     }
@@ -93,13 +99,38 @@ struct MainView: View {
         navigateToFight = true
     }
 
-    private func handleMeetingNotification(_ meeting: Meeting) {
-        notificationMeeting = meeting
+    private func handleFightNotification(_ fight: Fight) {
+        notificationFight = fight
         if let fromUserId = friendManagement.friends.first(where: {
-            $0.id.uuidString == meeting.from
+            $0.id.uuidString == fight.from
         }) {
             selectedFriend = fromUserId
         }
         navigateToFight = true
+    }
+
+    private func registerForPushNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
+            granted, error in
+            if granted {
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            }
+        }
+    }
+
+    private func requestPermissionsIfNeeded() {
+        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                print("Camera permission: \(granted)")
+            }
+        }
+
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                print("Microphone permission: \(granted)")
+            }
+        }
     }
 }
