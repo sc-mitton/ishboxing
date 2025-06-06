@@ -64,7 +64,6 @@ const sendFriendConfirmationNotification = async (
     topic: apnTopic,
   });
   await client.send(notification);
-  console.log("Sent notification");
 };
 
 // Main handler
@@ -74,56 +73,34 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { record, type } = await req.json();
-
-    // Only proceed if this is an UPDATE and confirmed is true
-    if (type !== "UPDATE" || !record.confirmed) {
-      return new Response(
-        JSON.stringify({ message: "Not a friend confirmation" }),
-        {
-          headers: { "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
-    }
+    const { data: requestData } = await req.json();
 
     // Get the friend's profile information and APN tokens
     const { data: users, error } = await privilegedSupabaseClient
-      .from("friends")
+      .from("profiles")
       .select(
-        "user_id, friend_id, profiles:user_id(username), apn_tokens(token)",
+        "id, username, apn_tokens(token)",
       )
-      .eq("user_id", record.friend_id)
-      .eq("friend_id", record.user_id);
+      .in("id", [requestData.user_id, requestData.friend_id]);
 
-    if (error) {
+    if (error || !users || users.length === 0) {
       console.error("Error fetching users:", error);
-      return new Response("Error fetching users", { status: 500 });
+      return new Response("Error fetching users", { status: 404 });
     }
 
-    if (!users || users.length === 0) {
-      return new Response("No matching friend record found", { status: 404 });
-    }
-
-    // Send notification to all user's devices
-    for (const token of users[0].apn_tokens) {
-      await sendFriendConfirmationNotification(
-        {
-          username: users[0].profiles[0].username,
-          user_id: users[0].user_id,
-        },
-        {
-          username: users[1].profiles[0].username,
-          user_id: users[1].user_id,
-        },
-        token.token,
-      );
-    }
-
-    return new Response(
-      JSON.stringify({ message: "Notification sent successfully" }),
-      { headers: { "Content-Type": "application/json" } },
+    await sendFriendConfirmationNotification(
+      {
+        username: users[1].username,
+        user_id: users[1].id,
+      },
+      {
+        username: users[0].username,
+        user_id: users[0].id,
+      },
+      users[1].apn_tokens[0].token,
     );
+
+    return new Response("User notified", { status: 200 });
   } catch (err) {
     console.error("Unexpected error:", err);
     return new Response(

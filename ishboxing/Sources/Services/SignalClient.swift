@@ -39,24 +39,24 @@ final class SignalClient {
         self.webRTCClient.delegate = self
     }
 
-    func joinFight(_ fight: Fight) async {
-        self.channelId = fight.id
+    func joinMatch(_ match: Match) async {
+        self.channelId = match.id
         await self.supabase.openSocketChannel(self.channelId)
         startConnectionTimeoutTimer()
     }
 
-    func startFight(with userId: String) async {
+    func startMatch(with userId: String) async {
         self.channelId = UUID().uuidString
-        let fight = Fight(from: self.userId, to: userId, id: self.channelId)
-        await self.supabase.openSocketChannel(fight.id)
+        let match = Match(from: self.userId, to: userId, id: self.channelId)
+        await self.supabase.openSocketChannel(match.id)
         startConnectionTimeoutTimer()
-        await notifyUser(fight: fight)
+        await notifyUser(match: match)
     }
 
-    func notifyUser(fight: Fight) async {
-        // Send initial fight request via Supabase Functions
+    func notifyUser(match: Match) async {
+        // Send initial match request via Supabase Functions
         do {
-            let data = try self.encoder.encode(fight)
+            let data = try self.encoder.encode(match)
             let response: Response = try await self.supabase.client.functions.invoke(
                 "alertUser",
                 options: FunctionInvokeOptions(

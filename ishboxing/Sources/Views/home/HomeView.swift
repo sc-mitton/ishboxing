@@ -12,10 +12,11 @@ import WebRTC
 
 struct HomeView: View {
     @StateObject private var friendManagement = FriendManagement.shared
+    @StateObject private var userManagement = UserManagement()
     @State private var selectedFriend: User?
-    @State private var navigateToFight = false
-    @State private var notificationFight: Fight?
-    @State private var showAddFriendModalView = false
+    @State private var navigateToMatch = false
+    @State private var notificationMatch: Match?
+    @State private var showMatchRequestModal = false
     @State private var newFriendUsername = ""
     @State private var addFriendError: String?
 
@@ -62,15 +63,22 @@ struct HomeView: View {
                     .frame(height: UIScreen.main.bounds.height / 3)
 
                     // Friends list section
-                    FriendsListView(onFightInitiated: initiateFight)
+                    FriendsListView(onMatchInitiated: initiateMatch)
                 }
             }
-            .navigationDestination(isPresented: $navigateToFight) {
+            .fullScreenCover(isPresented: $navigateToMatch) {
                 if let friend = selectedFriend {
-                    FightView(
+                    MatchView(
                         friend: friend,
-                        fight: notificationFight
+                        match: notificationMatch
                     )
+                }
+            }
+            .sheet(isPresented: $showMatchRequestModal) {
+                if let match = notificationMatch {
+                    MatchRequestModalView(match: match) {
+                        navigateToMatch = true
+                    }
                 }
             }
             .task {
@@ -87,9 +95,9 @@ struct HomeView: View {
         }
     }
 
-    private func initiateFight(with friend: User) {
+    private func initiateMatch(with friend: User) {
         selectedFriend = friend
-        navigateToFight = true
+        navigateToMatch = true
     }
 
     private func registerForPushNotifications() {
@@ -121,19 +129,24 @@ struct HomeView: View {
 
     private func setupNotificationObserver() {
         NotificationCenter.default.addObserver(
-            forName: NSNotification.Name("FightNotificationReceived"),
+            forName: NSNotification.Name("MatchNotificationReceived"),
             object: nil,
             queue: .main
         ) { notification in
-            guard let fight = notification.userInfo?["fight"] as? Fight
+            guard let match = notification.userInfo?["match"] as? Match
             else { return }
 
-            // Find the friend who initiated the fight
-            if let friend = friendManagement.friends.first(where: { $0.id.uuidString == fight.from }
-            ) {
-                self.selectedFriend = friend
-                self.notificationFight = fight
-                self.navigateToFight = true
+            // Find the friend who initiated the match
+            if let friend = friendManagement.unifiedFriends.first(where: {
+                $0.user.id.uuidString == match.from
+            }) {
+                self.selectedFriend = friend.user
+                self.notificationMatch = match
+
+                // Only show the match
+                if !userManagement.isInMatch {
+                    self.showMatchRequestModal = true
+                }
             }
         }
     }

@@ -122,11 +122,16 @@ class SupabaseService: ObservableObject {
         let userId = session.user.id
 
         // Fetch friends where the current user is either user_id or friend_id
-        let response =
-            try await client
-            .from("friends")
-            .select("friend_id, profiles:friend_id(username)")
-            .eq("user_id", value: userId.uuidString.lowercased())
+        let response = try await client.from("friends")
+            .select(
+                """
+                    id,
+                    friend:profiles!friends_friend_id_fkey (
+                        username
+                    )
+                """
+            )
+            .or("user_id.eq.\(userId),friend_id.eq.\(userId)")
             .eq("confirmed", value: true)
             .execute()
 
@@ -168,13 +173,10 @@ class SupabaseService: ObservableObject {
         ).execute()
     }
 
-    func confirmFriendship(_ friendId: String) async throws {
-        let session = try await client.auth.session
-        let userId = session.user.id
+    func confirmFriendship(_ friendshipId: String) async throws {
         try await client.from("friends")
             .update(["confirmed": true])
-            .eq("user_id", value: userId)
-            .eq("friend_id", value: friendId)
+            .eq("id", value: friendshipId)
             .execute()
     }
 
@@ -195,7 +197,7 @@ class SupabaseService: ObservableObject {
         let response = try await client.from("friends")
             .select("id, user_id, friend_id, profiles:user_id(username)")
             .eq("friend_id", value: userId)
-            .eq("confirmed", value: false)
+            .or("confirmed.eq.false,confirmed.is.null")
             .execute()
 
         // Parse the response and create FriendRequest objects
@@ -214,9 +216,9 @@ class SupabaseService: ObservableObject {
         let session = try await client.auth.session
         let userId = session.user.id
         let response = try await client.from("friends")
-            .select("id, user_id, friend_id, profiles:user_id(username)")
+            .select("id, user_id, friend_id, profiles:friend_id(username)")
             .eq("user_id", value: userId)
-            .eq("confirmed", value: false)
+            .or("confirmed.eq.false,confirmed.is.null")
             .execute()
 
         let friendsData = try self.decoder.decode([FriendRequestResponse].self, from: response.data)

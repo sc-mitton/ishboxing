@@ -10,7 +10,7 @@ BEGIN
     -- Perform the HTTP POST request
     PERFORM "net"."http_post"(
         sb_base_functions_url || '/notifyFriendRequest',
-        to_jsonb(NEW),
+        jsonb_build_object('data', to_jsonb(NEW)),
         headers := jsonb_build_object(
             'Content-Type', 'application/json',
             'Authorization', 'Bearer ' || sb_sr_secret
@@ -37,10 +37,9 @@ BEGIN
     -- Perform the HTTP POST request
     PERFORM "net"."http_post"(
         sb_base_functions_url || '/notifyFriendConfirmation',
-        to_jsonb(NEW),
+        jsonb_build_object('data', to_jsonb(NEW)),
         headers := jsonb_build_object(
             'Content-Type', 'application/json',
-
             'Authorization', 'Bearer ' || sb_sr_secret
         )
     );

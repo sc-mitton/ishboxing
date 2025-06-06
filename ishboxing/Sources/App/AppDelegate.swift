@@ -1,9 +1,22 @@
 import Foundation
 import UIKit
+import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     let supabase = SupabaseService.shared
     let friendManagement = FriendManagement.shared
+
+    override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        return true
+    }
 
     func application(
         _ application: UIApplication,
@@ -29,22 +42,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        if response.notification.request.content.categoryIdentifier == "FRIEND_REQUEST" {
-            let friendId = response.notification.request.content.userInfo["to"] as? String
-            if let friendId = friendId {
-                Task {
-                    do {
-                        try await supabase.confirmFriendship(friendId)
-                        UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-                        await friendManagement.fetchFriends()
-                    } catch {
-                        print("❌ Failed to confirm friendship: \(error)")
-                    }
-                }
-            }
-        } else if response.notification.request.content.categoryIdentifier == "FIGHT_NOTIFICATION" {
-            handleFightNotification(response.notification.request.content.userInfo)
-        }
+        handleNotification(response.notification.request.content)
         completionHandler()
     }
 
@@ -54,24 +52,35 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) ->
             Void
     ) {
-        if notification.request.content.categoryIdentifier == "FIGHT_NOTIFICATION" {
-            handleFightNotification(notification.request.content.userInfo)
-        }
+        handleNotification(notification.request.content)
         completionHandler(.sound)
     }
 
-    private func handleFightNotification(_ userInfo: [AnyHashable: Any]) {
-        if let fightData = userInfo["meeting"] as? [String: String],
-            let from = fightData["from"],
-            let to = fightData["to"],
-            let id = fightData["id"]
+    private func handleNotification(_ content: UNNotificationContent) {
+        let catIdentifier = content.categoryIdentifier
+
+        if catIdentifier == "FRIEND_REQUEST" || catIdentifier == "FRIEND_CONFIRMATION" {
+            UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+            Task { @MainActor in
+                await friendManagement.fetchFriends()
+            }
+        } else if catIdentifier == "MATCH_NOTIFICATION" {
+            handleMatchNotification(content.userInfo)
+        }
+    }
+
+    private func handleMatchNotification(_ userInfo: [AnyHashable: Any]) {
+        if let matchData = userInfo["match"] as? [String: String],
+            let from = matchData["from"],
+            let to = matchData["to"],
+            let id = matchData["id"]
         {
-            let fight = Fight(from: from, to: to, id: id)
+            let match = Match(from: from, to: to, id: id)
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
-                    name: NSNotification.Name("FightNotificationReceived"),
+                    name: NSNotification.Name("MatchNotificationReceived"),
                     object: nil,
-                    userInfo: ["fight": fight]
+                    userInfo: ["match": match]
                 )
             }
         }

@@ -47,7 +47,7 @@ const client = new ApnsClient({
 
 const privilegedSupabaseClient = createClient(supabaseUrl, supabaseKey);
 
-const sendFriendRequestNotification = async (
+const sendMatchNotification = async (
   from: { username: string; user_id: string },
   to: { username: string; user_id: string },
   apnToken: string,
@@ -55,10 +55,10 @@ const sendFriendRequestNotification = async (
   const notification = new Notification(apnToken, {
     type: PushType.alert,
     alert: {
-      title: "New Friend Request",
-      body: `${from.username} wants to be your friend`,
+      title: "New Match Request",
+      body: `${from.username} has started a match`,
     },
-    category: "FRIEND_REQUEST",
+    category: "MATCH_NOTIFICATION",
     data: {
       from: from.user_id,
       to: to.user_id,
@@ -79,20 +79,23 @@ Deno.serve(async (req) => {
 
   try {
     const { data: requestData } = await req.json();
+    if (!requestData.is_owner) {
+      return new Response("Not owner", { status: 200 });
+    }
 
     const { data: users, error } = await privilegedSupabaseClient
       .from("profiles")
       .select(
         "id, username, apn_tokens(token)",
       )
-      .in("id", [requestData.user_id, requestData.friend_id]);
+      .eq("id", requestData.user_id);
 
     if (!users) {
       console.error("Error fetching users:", error);
       return new Response("Error fetching users", { status: 500 });
     }
 
-    await sendFriendRequestNotification(
+    await sendMatchNotification(
       {
         username: users[0].username,
         user_id: users[0].id,

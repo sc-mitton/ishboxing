@@ -1,11 +1,11 @@
-public struct Fight: Codable {
+public struct Match: Codable {
     public let from: String
     public let to: String
     public let id: String
 }
 
-public struct FightNotification: Codable {
-    public let fight: Fight
+public struct MatchNotification: Codable {
+    public let match: Match
 }
 
 public struct JoinedAck: Codable {

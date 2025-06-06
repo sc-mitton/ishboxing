@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct FriendsListView: View {
-    @ObservedObject private var friendManagement = FriendManagement.shared
-    let onFightInitiated: (User) -> Void
+    let onMatchInitiated: (User) -> Void
+    @StateObject private var friendManagement = FriendManagement.shared
     @State private var showAddFriendModalView = false
 
     var body: some View {
@@ -11,7 +11,7 @@ struct FriendsListView: View {
                 Section(
                     header:
                         HStack {
-                            Text("Friends")
+                            Text("Friends ")
                                 .font(.bangers(size: 26))
                                 .foregroundColor(.ishRed)
                             Spacer()
@@ -34,79 +34,62 @@ struct FriendsListView: View {
                             .foregroundColor(.red)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
-                    } else if friendManagement.friends.isEmpty
-                        && friendManagement.pendingFriendRequests.isEmpty
-                        && friendManagement.pendingSentFriendRequests.isEmpty
-                    {
+                    } else if friendManagement.unifiedFriends.isEmpty {
                         Text("No friends yet")
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding()
                     } else {
-                        // Show pending friend requests first
-                        ForEach(friendManagement.pendingFriendRequests, id: \.id) { request in
+                        ForEach(friendManagement.unifiedFriends) { unifiedFriend in
                             HStack {
-                                Text(request.friend.username)
+                                Text(unifiedFriend.user.username)
                                     .font(.headline)
                                 Spacer()
-                                Button(action: {
-                                    Task {
-                                        try? await friendManagement.confirmFriendRequest(request)
+
+                                switch unifiedFriend.status {
+                                case .confirmed:
+                                    Button(action: {
+                                        onMatchInitiated(unifiedFriend.user)
+                                    }) {
+                                        Text("Match ")
+                                            .font(.bangers(size: 20))
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(Color.ishRed)
+                                            .foregroundColor(.white)
+                                            .cornerRadius(12)
+                                            .shadow(
+                                                color: .ishRed.opacity(0.3), radius: 4, x: 0,
+                                                y: 2)
                                     }
-                                }) {
-                                    Text("Confirm")
+                                case .pending:
+                                    Button(action: {
+                                        if let requestId = unifiedFriend.requestId {
+                                            Task {
+                                                try? await friendManagement.confirmFriendRequest(
+                                                    requestId)
+                                            }
+                                        }
+                                    }) {
+                                        Text("Confirm ")
+                                            .font(.bangers(size: 20))
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                            .background(Color.ishBlue)
+                                            .foregroundColor(.white)
+                                            .cornerRadius(12)
+                                            .shadow(
+                                                color: .ishBlue.opacity(0.3), radius: 4, x: 0,
+                                                y: 2)
+                                    }
+                                case .requested:
+                                    Text("Pending ")
                                         .font(.bangers(size: 20))
+                                        .foregroundColor(.gray)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 8)
-                                        .background(Color.ishRed)
-                                        .foregroundColor(.white)
+                                        .background(Color.gray.opacity(0.2))
                                         .cornerRadius(12)
-                                        .shadow(
-                                            color: .ishRed.opacity(0.3), radius: 4, x: 0,
-                                            y: 2)
-                                }
-                            }
-                            .padding()
-                            .background(Color.white)
-                        }
-
-                        // Show pending sent friend requests
-                        ForEach(friendManagement.pendingSentFriendRequests, id: \.id) { request in
-                            HStack {
-                                Text(request.friend.username)
-                                    .font(.headline)
-                                Spacer()
-                                Text("Pending")
-                                    .font(.bangers(size: 20))
-                                    .foregroundColor(.gray)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 8)
-                                    .background(Color.gray.opacity(0.2))
-                                    .cornerRadius(12)
-                            }
-                            .padding()
-                            .background(Color.white)
-                        }
-
-                        // Then show confirmed friends
-                        ForEach(friendManagement.friends) { friend in
-                            HStack {
-                                Text(friend.username)
-                                    .font(.headline)
-                                Spacer()
-                                Button(action: {
-                                    onFightInitiated(friend)
-                                }) {
-                                    Text("Fight")
-                                        .font(.bangers(size: 20))
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color.ishRed)
-                                        .foregroundColor(.white)
-                                        .cornerRadius(12)
-                                        .shadow(
-                                            color: .ishRed.opacity(0.3), radius: 4, x: 0,
-                                            y: 2)
                                 }
                             }
                             .padding()
@@ -114,6 +97,11 @@ struct FriendsListView: View {
                         }
                     }
                 }
+            }
+        }
+        .refreshable {
+            Task {
+                await friendManagement.fetchFriends()
             }
         }
         .background(Color(.systemGray6))

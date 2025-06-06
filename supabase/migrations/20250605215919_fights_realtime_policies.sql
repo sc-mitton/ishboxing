@@ -1,12 +1,12 @@
-create policy "fight owners can add users"
-on "public"."fight_users"
+create policy "match owners can add users"
+on "public"."match_users"
 for insert
 with check (
   exists (
     select 1
-    from fight_users as fu
-    where fu.user_id = auth.uid()
-      and fu.fight_topic = fight_users.fight_topic
+    from match_users as mu
+    where mu.user_id = auth.uid()
+      and mu.match_topic = match_users.match_topic
       and fu.is_owner = true
   )
 );
@@ -20,10 +20,10 @@ with check (
     select
       user_id
     from
-      fight_users
+      match_users
     where
       user_id = (select auth.uid())
-      and fight_topic = (select realtime.topic())
+      and match_topic = (select realtime.topic())
       and realtime.messages.extension in ('broadcast')
   )
 );
@@ -37,10 +37,10 @@ exists (
     select
       user_id
     from
-      fight_users
+      match_users
     where
       user_id = (select auth.uid())
-      and fight_topic = (select realtime.topic())
+      and match_topic = (select realtime.topic())
       and realtime.messages.extension in ('broadcast')
   )
 );

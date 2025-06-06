@@ -3,26 +3,26 @@ import Supabase
 import SwiftUI
 import WebRTC
 
-struct FightView: View {
+struct MatchView: View {
     let friend: User
-    let fight: Fight?
+    let match: Match?
     let supabaseService = SupabaseService.shared
     let webRTCClient: WebRTCClient
 
-    @StateObject private var viewModel: FightViewModel
+    @StateObject private var viewModel: MatchViewModel
 
-    init(friend: User, fight: Fight?) {
-        self.fight = fight
+    init(friend: User, match: Match?) {
+        self.match = match
         self.friend = friend
 
         self.webRTCClient = WebRTCClient(iceServers: WebRTCConfig.default.iceServers)
         let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
 
         self._viewModel = StateObject(
-            wrappedValue: FightViewModel(
+            wrappedValue: MatchViewModel(
                 signalClient: signalClient,
                 friend: friend,
-                fight: fight
+                match: match
             ))
     }
 

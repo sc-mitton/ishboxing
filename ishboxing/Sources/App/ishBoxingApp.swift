@@ -21,7 +21,7 @@ struct ishBoxingApp: App {
 
     private let config = WebRTCConfig.default
     @StateObject private var supabaseService = SupabaseService.shared
-    @State private var currentFight: Fight?
+    @State private var currentMatch: Match?
     @StateObject private var router = Router()
     @StateObject private var userManagement = UserManagement()
 
@@ -61,8 +61,8 @@ struct ishBoxingApp: App {
     @_exported import Inject
 #endif
 
-extension Fight: Equatable {
-    public static func == (lhs: Fight, rhs: Fight) -> Bool {
+extension Match: Equatable {
+    public static func == (lhs: Match, rhs: Match) -> Bool {
         lhs.id == rhs.id
     }
 }
