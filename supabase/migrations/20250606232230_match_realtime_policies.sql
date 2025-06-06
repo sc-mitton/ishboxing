@@ -7,7 +7,7 @@ with check (
     from match_users as mu
     where mu.user_id = auth.uid()
       and mu.match_topic = match_users.match_topic
-      and fu.is_owner = true
+      and mu.is_owner = true
   )
 );
 
