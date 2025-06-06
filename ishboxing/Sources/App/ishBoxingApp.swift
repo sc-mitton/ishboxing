@@ -40,12 +40,13 @@ struct ishBoxingApp: App {
                     switch route {
                     case "username":
                         UsernameSetupView()
+                    case "otp":
+                        OTPVerificationView()
+                    case "phone":
+                        PhoneSignInView()
                     default:
                         EmptyView()
                     }
-                }
-                .navigationDestination(for: OTPRoute.self) { route in
-                    OTPVerificationView()
                 }
             }
             .environmentObject(router)

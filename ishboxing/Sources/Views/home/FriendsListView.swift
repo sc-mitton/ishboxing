@@ -12,7 +12,7 @@ struct FriendsListView: View {
                     header:
                         HStack {
                             Text("Friends")
-                                .font(.bangers(size: 22))
+                                .font(.bangers(size: 26))
                                 .foregroundColor(.ishRed)
                             Spacer()
                             Button(action: { showAddFriendModalView = true }) {

@@ -1,6 +1,10 @@
 import Foundation
 import Supabase
 
+struct ProfileResponse: Codable {
+    let id: String
+}
+
 class SupabaseService: ObservableObject {
     public let client: SupabaseClient
     private let decoder = JSONDecoder()
@@ -127,7 +131,7 @@ class SupabaseService: ObservableObject {
             .execute()
 
         // Parse the response and create Friend objects
-        let friendsData = try JSONDecoder().decode([FriendResponse].self, from: response.data)
+        let friendsData = try self.decoder.decode([FriendResponse].self, from: response.data)
         return friendsData.map { response in
             User(
                 id: response.id,
@@ -135,12 +139,32 @@ class SupabaseService: ObservableObject {
             )
         }
     }
-
     func addFriend(_ username: String) async throws {
-        try await client.functions.invoke(
-            "addFriend",
-            options: FunctionInvokeOptions(body: ["username": username])
-        )
+        let session = try await client.auth.session
+        let userId = session.user.id
+
+        // Get the friend's profile first
+        let response = try await client.from("profiles")
+            .select("id")
+            .eq("username", value: username)
+            .single()
+            .execute()
+
+        // Check if friend exists
+        guard let friendData = try? self.decoder.decode(ProfileResponse.self, from: response.data)
+        else {
+            throw NSError(
+                domain: "", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "No user found with username: \(username)"])
+        }
+
+        // Insert friend relationship
+        try await client.from("friends").insert(
+            [
+                "user_id": userId.uuidString,
+                "friend_id": friendData.id,
+            ]
+        ).execute()
     }
 
     func confirmFriendship(_ friendId: String) async throws {
@@ -168,11 +192,21 @@ class SupabaseService: ObservableObject {
         let session = try await client.auth.session
         let userId = session.user.id
         let response = try await client.from("friends")
-            .select("id, user_id, friend_id, profiles:friend_id(username)")
+            .select("id, user_id, friend_id, profiles:user_id(username)")
             .eq("friend_id", value: userId)
             .eq("confirmed", value: false)
             .execute()
-        return try JSONDecoder().decode([FriendRequest].self, from: response.data)
+
+        // Parse the response and create FriendRequest objects
+        let friendsData = try self.decoder.decode([FriendRequestResponse].self, from: response.data)
+        return friendsData.map { response in
+            FriendRequest(
+                id: response.id,
+                from: response.user_id,
+                to: response.friend_id,
+                username: response.profiles.username
+            )
+        }
     }
 
     func saveAPNToken(token: String, deviceId: String) async throws {

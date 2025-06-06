@@ -15,8 +15,6 @@ class FriendManagement: ObservableObject {
         do {
             friends = try await supabaseService.getFriends()
             pendingFriendRequests = try await supabaseService.getPendingFriendRequests()
-            print("friends", friends)
-            print("pendingFriendRequests", pendingFriendRequests)
         } catch {
             errorMessage = error.localizedDescription
         }

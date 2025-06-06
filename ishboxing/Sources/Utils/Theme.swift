@@ -12,3 +12,9 @@ extension Font {
         .custom("Bangers-Regular", size: size)
     }
 }
+
+extension Text {
+    static func mainTitle() -> CGFloat {
+        UIDevice.current.userInterfaceIdiom == .pad ? 54 : 38
+    }
+}

@@ -41,3 +41,10 @@ public struct FriendRequest: Codable {
         self.friend = FriendUser(username: username)
     }
 }
+
+public struct FriendRequestResponse: Codable {
+    public let id: UUID
+    public let user_id: UUID
+    public let friend_id: UUID
+    public let profiles: FriendUser
+}

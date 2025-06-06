@@ -33,7 +33,7 @@ struct MainView: View {
                     // Stats section
                     VStack(spacing: 20) {
                         Text("Ish Boxing ")
-                            .font(.bangers(size: 38))
+                            .font(.bangers(size: Text.mainTitle()))
                             .foregroundColor(.white)
                             .padding(.top, 16)
 

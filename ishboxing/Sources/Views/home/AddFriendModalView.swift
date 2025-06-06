@@ -24,8 +24,7 @@ struct AddFriendModalView: View {
                 )
                 .ignoresSafeArea()
                 .onTapGesture {
-                    isPresented = false
-                    onClose()
+                    dismissModal()
                 }
                 .transition(.opacity)
                 .opacity(isPresented ? 1 : 0)
@@ -54,10 +53,7 @@ struct AddFriendModalView: View {
 
                 HStack(spacing: 20) {
                     Button(action: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isPresented = false
-                        }
-                        onClose()
+                        dismissModal()
                     }) {
                         Text("Cancel")
                             .font(.bangers(size: 20))
@@ -70,6 +66,7 @@ struct AddFriendModalView: View {
                     Button(action: {
                         Task {
                             await addFriend()
+                            dismissModal()
                         }
                     }) {
                         Text("Add ")
@@ -95,15 +92,23 @@ struct AddFriendModalView: View {
             .opacity(isPresented ? 1 : 0)
             .scaleEffect(isPresented ? 1 : 0.95)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)  // Ensure ZStack fills screen
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             withAnimation(.easeInOut(duration: 0.3)) {
                 isFocused = true
+                isPresented = true
             }
         }
-        .ignoresSafeArea()
-        .onAppear { isPresented = true }
-        .onDisappear { isPresented = false }
+        .onDisappear {
+            isPresented = false
+        }
+    }
+
+    private func dismissModal() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isPresented = false
+        }
+        onClose()
     }
 
     private func addFriend() async {
