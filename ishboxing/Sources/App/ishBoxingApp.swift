@@ -30,7 +30,7 @@ struct ishBoxingApp: App {
             NavigationStack(path: $router.path) {
                 Group {
                     if supabaseService.isAuthenticated {
-                        MainView()
+                        HomeView()
                             .navigationBarBackButtonHidden(true)
                     } else {
                         PhoneSignInView()

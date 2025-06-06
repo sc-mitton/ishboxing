@@ -3,6 +3,7 @@ import UIKit
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     let supabase = SupabaseService.shared
+    let friendManagement = FriendManagement.shared
 
     func application(
         _ application: UIApplication,
@@ -35,6 +36,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                     do {
                         try await supabase.confirmFriendship(friendId)
                         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
+                        await friendManagement.fetchFriends()
                     } catch {
                         print("❌ Failed to confirm friendship: \(error)")
                     }

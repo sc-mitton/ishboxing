@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FriendsListView: View {
-    @ObservedObject var friendManagement: FriendManagement
+    @ObservedObject private var friendManagement = FriendManagement.shared
     let onFightInitiated: (User) -> Void
     @State private var showAddFriendModalView = false
 

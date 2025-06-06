@@ -36,14 +36,18 @@ struct AddFriendModalView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 4)
 
-                TextField("Username", text: $newFriendUsername)
-                    .focused($isFocused)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .padding(12)
-                    .background(Color.ishLightBlue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                TextField(
+                    "Username", text: $newFriendUsername,
+                    prompt: Text("Enter username").foregroundColor(Color.white.opacity(0.3))
+                )
+                .focused($isFocused)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .padding(12)
+                .background(Color.ishLightBlue)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+                .tint(.white)
 
                 if let formError = formError {
                     Text(formError)

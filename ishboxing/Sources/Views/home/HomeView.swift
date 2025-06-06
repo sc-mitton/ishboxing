@@ -10,8 +10,8 @@ import SwiftUI
 import UserNotifications
 import WebRTC
 
-struct MainView: View {
-    @StateObject private var friendManagement = FriendManagement()
+struct HomeView: View {
+    @StateObject private var friendManagement = FriendManagement.shared
     @State private var selectedFriend: User?
     @State private var navigateToFight = false
     @State private var notificationFight: Fight?
@@ -62,10 +62,7 @@ struct MainView: View {
                     .frame(height: UIScreen.main.bounds.height / 3)
 
                     // Friends list section
-                    FriendsListView(
-                        friendManagement: friendManagement,
-                        onFightInitiated: initiateFight
-                    )
+                    FriendsListView(onFightInitiated: initiateFight)
                 }
             }
             .navigationDestination(isPresented: $navigateToFight) {

@@ -1,6 +1,8 @@
 import SwiftUI
 
 class FriendManagement: ObservableObject {
+    static let shared = FriendManagement()
+
     @Published var friends: [User] = []
     @Published var pendingFriendRequests: [FriendRequest] = []
     @Published var pendingSentFriendRequests: [FriendRequest] = []
@@ -8,6 +10,8 @@ class FriendManagement: ObservableObject {
     @Published var errorMessage: String?
 
     private let supabaseService = SupabaseService.shared
+
+    private init() {}
 
     func fetchFriends() async {
         isLoading = true
