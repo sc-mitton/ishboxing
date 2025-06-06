@@ -1,3 +1,4 @@
+import SwiftSVG
 import SwiftUI
 
 struct FriendsListView: View {
@@ -8,94 +9,12 @@ struct FriendsListView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                Section(
-                    header:
-                        HStack {
-                            Text("Friends ")
-                                .font(.bangers(size: 26))
-                                .foregroundColor(.ishRed)
-                            Spacer()
-                            Button(action: { showAddFriendModalView = true }) {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(.ishRed)
-                                    .font(.system(size: 24))
-                            }
-                        }
-                        .padding(.vertical, 16)
-                        .padding(.horizontal)
-                        .background(Color(.systemGray6))
-                ) {
-                    if friendManagement.isLoading {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else if let error = friendManagement.errorMessage {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else if friendManagement.unifiedFriends.isEmpty {
-                        Text("No friends yet")
-                            .foregroundColor(.gray)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else {
-                        ForEach(friendManagement.unifiedFriends) { unifiedFriend in
-                            HStack {
-                                Text(unifiedFriend.user.username)
-                                    .font(.headline)
-                                Spacer()
-
-                                switch unifiedFriend.status {
-                                case .confirmed:
-                                    Button(action: {
-                                        onMatchInitiated(unifiedFriend.user)
-                                    }) {
-                                        Text("Match ")
-                                            .font(.bangers(size: 20))
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 8)
-                                            .background(Color.ishRed)
-                                            .foregroundColor(.white)
-                                            .cornerRadius(12)
-                                            .shadow(
-                                                color: .ishRed.opacity(0.3), radius: 4, x: 0,
-                                                y: 2)
-                                    }
-                                case .pending:
-                                    Button(action: {
-                                        if let requestId = unifiedFriend.requestId {
-                                            Task {
-                                                try? await friendManagement.confirmFriendRequest(
-                                                    requestId)
-                                            }
-                                        }
-                                    }) {
-                                        Text("Confirm ")
-                                            .font(.bangers(size: 20))
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 8)
-                                            .background(Color.ishBlue)
-                                            .foregroundColor(.white)
-                                            .cornerRadius(12)
-                                            .shadow(
-                                                color: .ishBlue.opacity(0.3), radius: 4, x: 0,
-                                                y: 2)
-                                    }
-                                case .requested:
-                                    Text("Pending ")
-                                        .font(.bangers(size: 20))
-                                        .foregroundColor(.gray)
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
-                                        .background(Color.gray.opacity(0.2))
-                                        .cornerRadius(12)
-                                }
-                            }
-                            .padding()
-                            .background(Color.white)
-                        }
-                    }
+                Section(header: FriendsListHeader(showAddFriendModalView: $showAddFriendModalView))
+                {
+                    FriendsListContent(
+                        friendManagement: friendManagement,
+                        onMatchInitiated: onMatchInitiated
+                    )
                 }
             }
         }
@@ -121,6 +40,115 @@ struct FriendsListView: View {
                 transaction.disablesAnimations = true
             }
         }
+    }
+}
+
+private struct FriendsListHeader: View {
+    @Binding var showAddFriendModalView: Bool
+
+    var body: some View {
+        HStack {
+            Text("Friends ")
+                .font(.bangers(size: 26))
+                .foregroundColor(.ishRed)
+            Spacer()
+            Button(action: { showAddFriendModalView = true }) {
+                Image(systemName: "plus.circle.fill")
+                    .foregroundColor(.ishRed)
+                    .font(.system(size: 24))
+            }
+        }
+        .padding(.vertical, 16)
+        .padding(.horizontal)
+        .background(Color(.systemGray6))
+    }
+}
+
+private struct FriendsListContent: View {
+    @ObservedObject var friendManagement: FriendManagement
+    let onMatchInitiated: (User) -> Void
+
+    var body: some View {
+        if friendManagement.isLoading {
+            ProgressView()
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+        } else if let error = friendManagement.errorMessage {
+            Text(error)
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+        } else if friendManagement.unifiedFriends.isEmpty {
+            Text("No friends yet")
+                .foregroundColor(.gray)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+        } else {
+            ForEach(friendManagement.unifiedFriends) { unifiedFriend in
+                FriendListItem(
+                    unifiedFriend: unifiedFriend,
+                    onMatchInitiated: onMatchInitiated,
+                    friendManagement: friendManagement
+                )
+            }
+        }
+    }
+}
+
+private struct FriendListItem: View {
+    let unifiedFriend: UnifiedFriend
+    let onMatchInitiated: (User) -> Void
+    @ObservedObject var friendManagement: FriendManagement
+
+    var body: some View {
+        HStack {
+            Text(unifiedFriend.user.username)
+                .font(.headline)
+            Spacer()
+
+            switch unifiedFriend.status {
+            case .confirmed:
+                Button(action: {
+                    onMatchInitiated(unifiedFriend.user)
+                }) {
+                    Image("glove")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                        .scaleEffect(x: -1, y: 1)  // Flip horizontally
+                        .padding(8)
+                        .background(Color.ishRed)
+                        .clipShape(Circle())
+                        .shadow(color: .ishRed.opacity(0.3), radius: 4, x: 0, y: 2)
+                }
+            case .pending:
+                Button(action: {
+                    if let requestId = unifiedFriend.requestId {
+                        Task {
+                            try? await friendManagement.confirmFriendRequest(requestId)
+                        }
+                    }
+                }) {
+                    Text("Confirm ")
+                        .font(.bangers(size: 20))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.ishBlue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                        .shadow(color: .ishBlue.opacity(0.3), radius: 4, x: 0, y: 2)
+                }
+            case .requested:
+                Text("Pending ")
+                    .font(.bangers(size: 20))
+                    .foregroundColor(.gray)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.2))
+                    .cornerRadius(12)
+            }
+        }
+        .padding()
+        .background(Color.white)
     }
 }
 

@@ -19,6 +19,7 @@
 		9A9C54352DEFA3520060E85F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C54342DEFA3520060E85F /* Supabase */; };
 		9A9C54372DEFA5C60060E85F /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9A9C54362DEFA5C60060E85F /* Config.xcconfig */; };
 		9A9C54392DEFA5CB0060E85F /* DebugConfig.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */; };
+		9ABB38BD2DF3A65300CAB1B0 /* SwiftSVG in Frameworks */ = {isa = PBXBuildFile; productRef = 9ABB38BC2DF3A65300CAB1B0 /* SwiftSVG */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +85,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9A9C54352DEFA3520060E85F /* Supabase in Frameworks */,
+				9ABB38BD2DF3A65300CAB1B0 /* SwiftSVG in Frameworks */,
 				9A9C53F52DEF9F340060E85F /* Storage in Frameworks */,
 				9A9C53F12DEF9F340060E85F /* PostgREST in Frameworks */,
 				9A9C53EF2DEF9F340060E85F /* Functions in Frameworks */,
@@ -173,6 +175,7 @@
 				9A9C542C2DEF9FA60060E85F /* Inject */,
 				9A9C542F2DEF9FB90060E85F /* InjectionNext */,
 				9A9C54342DEFA3520060E85F /* Supabase */,
+				9ABB38BC2DF3A65300CAB1B0 /* SwiftSVG */,
 			);
 			productName = ishboxing;
 			productReference = 9AF997542DEF9DE7007F6F8C /* ishboxing.app */;
@@ -262,6 +265,7 @@
 				9A9C53F62DEF9F840060E85F /* XCRemoteSwiftPackageReference "WebRTC" */,
 				9A9C542B2DEF9FA60060E85F /* XCRemoteSwiftPackageReference "Inject" */,
 				9A9C542E2DEF9FB90060E85F /* XCRemoteSwiftPackageReference "InjectionNext" */,
+				9ABB38BB2DF3A65300CAB1B0 /* XCRemoteSwiftPackageReference "SwiftSVG" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9AF997552DEF9DE7007F6F8C /* Products */;
@@ -693,6 +697,14 @@
 				minimumVersion = 1.3.1;
 			};
 		};
+		9ABB38BB2DF3A65300CAB1B0 /* XCRemoteSwiftPackageReference "SwiftSVG" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mchoe/SwiftSVG.git";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -745,6 +757,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 9A9C53EB2DEF9F340060E85F /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		9ABB38BC2DF3A65300CAB1B0 /* SwiftSVG */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9ABB38BB2DF3A65300CAB1B0 /* XCRemoteSwiftPackageReference "SwiftSVG" */;
+			productName = SwiftSVG;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
