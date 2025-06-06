@@ -115,6 +115,7 @@ struct AddFriendModalView: View {
         formError = nil
         do {
             try await friendManagement.addFriend(newFriendUsername)
+            await friendManagement.fetchFriends()
             newFriendUsername = ""
         } catch {
             formError = error.localizedDescription
