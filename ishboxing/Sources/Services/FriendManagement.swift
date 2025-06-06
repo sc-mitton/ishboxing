@@ -3,6 +3,7 @@ import SwiftUI
 class FriendManagement: ObservableObject {
     @Published var friends: [User] = []
     @Published var pendingFriendRequests: [FriendRequest] = []
+    @Published var pendingSentFriendRequests: [FriendRequest] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -15,6 +16,7 @@ class FriendManagement: ObservableObject {
         do {
             friends = try await supabaseService.getFriends()
             pendingFriendRequests = try await supabaseService.getPendingFriendRequests()
+            pendingSentFriendRequests = try await supabaseService.getPendingSentFriendRequests()
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -36,6 +36,7 @@ struct FriendsListView: View {
                             .padding()
                     } else if friendManagement.friends.isEmpty
                         && friendManagement.pendingFriendRequests.isEmpty
+                        && friendManagement.pendingSentFriendRequests.isEmpty
                     {
                         Text("No friends yet")
                             .foregroundColor(.gray)
@@ -64,6 +65,24 @@ struct FriendsListView: View {
                                             color: .ishRed.opacity(0.3), radius: 4, x: 0,
                                             y: 2)
                                 }
+                            }
+                            .padding()
+                            .background(Color.white)
+                        }
+
+                        // Show pending sent friend requests
+                        ForEach(friendManagement.pendingSentFriendRequests, id: \.id) { request in
+                            HStack {
+                                Text(request.friend.username)
+                                    .font(.headline)
+                                Spacer()
+                                Text("Pending")
+                                    .font(.bangers(size: 20))
+                                    .foregroundColor(.gray)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.gray.opacity(0.2))
+                                    .cornerRadius(12)
                             }
                             .padding()
                             .background(Color.white)

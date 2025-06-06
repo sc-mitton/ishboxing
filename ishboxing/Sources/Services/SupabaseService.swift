@@ -139,6 +139,7 @@ class SupabaseService: ObservableObject {
             )
         }
     }
+
     func addFriend(_ username: String) async throws {
         let session = try await client.auth.session
         let userId = session.user.id
@@ -198,6 +199,26 @@ class SupabaseService: ObservableObject {
             .execute()
 
         // Parse the response and create FriendRequest objects
+        let friendsData = try self.decoder.decode([FriendRequestResponse].self, from: response.data)
+        return friendsData.map { response in
+            FriendRequest(
+                id: response.id,
+                from: response.user_id,
+                to: response.friend_id,
+                username: response.profiles.username
+            )
+        }
+    }
+
+    func getPendingSentFriendRequests() async throws -> [FriendRequest] {
+        let session = try await client.auth.session
+        let userId = session.user.id
+        let response = try await client.from("friends")
+            .select("id, user_id, friend_id, profiles:user_id(username)")
+            .eq("user_id", value: userId)
+            .eq("confirmed", value: false)
+            .execute()
+
         let friendsData = try self.decoder.decode([FriendRequestResponse].self, from: response.data)
         return friendsData.map { response in
             FriendRequest(
