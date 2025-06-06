@@ -22,37 +22,35 @@ struct ishBoxingApp: App {
     private let config = WebRTCConfig.default
     @StateObject private var supabaseService = SupabaseService.shared
     @State private var currentFight: Fight?
-    @State private var navigationPath = NavigationPath()
+    @StateObject private var router = Router()
+    @StateObject private var userManagement = UserManagement()
 
     var body: some Scene {
         WindowGroup {
-            NavigationStack(path: $navigationPath) {
+            NavigationStack(path: $router.path) {
                 Group {
                     if supabaseService.isAuthenticated {
                         MainView()
                             .navigationBarBackButtonHidden(true)
                     } else {
-                        PhoneSignInView(navigationPath: $navigationPath)
+                        PhoneSignInView()
                     }
                 }
                 .navigationDestination(for: String.self) { route in
                     switch route {
                     case "username":
-                        UsernameSetupView(navigationPath: $navigationPath)
+                        UsernameSetupView()
                     default:
                         EmptyView()
                     }
                 }
                 .navigationDestination(for: OTPRoute.self) { route in
-                    OTPVerificationView(
-                        phoneNumber: route.phoneNumber, navigationPath: $navigationPath)
+                    OTPVerificationView()
                 }
             }
+            .environmentObject(router)
+            .environmentObject(userManagement)
         }
-    }
-
-    private func didReceiveRemoteNotification(fightNotification: FightNotification) {
-        currentFight = fightNotification.fight
     }
 }
 

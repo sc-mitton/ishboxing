@@ -1,18 +1,13 @@
 import SwiftUI
 
 struct OTPVerificationView: View {
-    let phoneNumber: String
     @StateObject private var supabaseService = SupabaseService()
     @State private var otp = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @Binding private var navigationPath: NavigationPath
+    @EnvironmentObject private var userManagement: UserManagement
+    @EnvironmentObject private var router: Router
     @FocusState private var isOTPFocused: Bool
-
-    init(phoneNumber: String, navigationPath: Binding<NavigationPath>) {
-        self.phoneNumber = phoneNumber
-        self._navigationPath = navigationPath
-    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -26,7 +21,7 @@ struct OTPVerificationView: View {
                     .foregroundColor(.ishRed)
                     .padding(.top, geometry.size.height > 800 ? 0 : 50)
 
-                Text("We sent a code to \(phoneNumber)")
+                Text("We sent a code to \(userManagement.phoneNumber ?? "")")
                     .foregroundColor(.secondary)
 
                 VStack(spacing: 20) {
@@ -51,7 +46,7 @@ struct OTPVerificationView: View {
                         if isLoading {
                             ProgressView()
                         } else {
-                            Text("Verify")
+                            Text("Verify ")
                                 .font(.bangers(size: 20))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -84,10 +79,10 @@ struct OTPVerificationView: View {
         isLoading = true
         errorMessage = nil
         do {
-            let e164PhoneNumber = "1" + phoneNumber.filter { $0.isNumber }
+            let e164PhoneNumber = "1" + userManagement.phoneNumber!.filter { $0.isNumber }
             try await supabaseService.verifyOTP(phoneNumber: e164PhoneNumber, token: otp)
             await MainActor.run {
-                navigationPath.append("username")
+                router.path.append("username")
             }
         } catch {
             errorMessage = error.localizedDescription

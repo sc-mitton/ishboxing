@@ -6,12 +6,8 @@ struct UsernameSetupView: View {
     @State private var username = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @Binding var navigationPath: NavigationPath
     @FocusState private var isUsernameFocused: Bool
-
-    init(navigationPath: Binding<NavigationPath>) {
-        self._navigationPath = navigationPath
-    }
+    @EnvironmentObject private var router: Router
 
     var body: some View {
         GeometryReader { geometry in
@@ -46,7 +42,7 @@ struct UsernameSetupView: View {
                         if isLoading {
                             ProgressView()
                         } else {
-                            Text("Continue")
+                            Text("Continue ")
                                 .font(.bangers(size: 20))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -83,7 +79,7 @@ struct UsernameSetupView: View {
             try await supabaseService.updateUsername(username)
             await MainActor.run {
                 supabaseService.isAuthenticated = true
-                navigationPath.removeLast(navigationPath.count)
+                router.path.removeLast(router.path.count)
             }
         } catch {
             errorMessage = error.localizedDescription

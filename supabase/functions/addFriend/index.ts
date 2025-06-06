@@ -45,30 +45,6 @@ const client = new ApnsClient({
   defaultTopic: apnTopic,
 });
 
-// Types
-interface FriendRequest {
-  username: string;
-  from: string;
-}
-
-interface UserProfile {
-  id: string;
-  username: string;
-  apn_tokens: { token: string }[];
-}
-
-// Type guards
-const isFriendRequest = (data: unknown): data is FriendRequest => {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "username" in data &&
-    "from" in data &&
-    typeof (data as FriendRequest).username === "string" &&
-    typeof (data as FriendRequest).from === "string"
-  );
-};
-
 // Helper functions
 const createSupabaseClient = (req: Request): SupabaseClient => {
   const authHeader = req.headers.get("Authorization");
@@ -80,28 +56,31 @@ const createSupabaseClient = (req: Request): SupabaseClient => {
   });
 };
 
+const privilegedSupabaseClient = createClient(supabaseUrl, supabaseKey);
+
 const sendFriendRequestNotification = async (
-  fromUsername: string,
-  toUsername: string,
+  from: { username: string; id: string },
+  to: { username: string; id: string },
   apnToken: string,
 ): Promise<void> => {
   const notification = new Notification(apnToken, {
     type: PushType.alert,
     alert: {
       title: "New Friend Request",
-      body: `${fromUsername} wants to be your friend`,
+      body: `${from.username} wants to be your friend`,
     },
+    category: "FRIEND_REQUEST",
     data: {
-      type: "friend_request",
-      from: fromUsername,
-      to: toUsername,
+      from: from.id,
+      to: to.id,
     },
     priority: Priority.low,
     sound: "default",
     expiration: new Date(Date.now() + 30 * 1000), // 30 seconds
+    topic: apnTopic,
   });
-
   await client.send(notification);
+  console.log("Sent notification");
 };
 
 // Main handler
@@ -112,34 +91,35 @@ Deno.serve(async (req) => {
 
   try {
     const data = await req.json();
-    if (!isFriendRequest(data)) {
+    if (!data.username) {
       return new Response("Invalid payload", { status: 400 });
     }
     const supabaseClient = createSupabaseClient(req);
-    // Fetch both users' data in a single query
-    const { data: users, error } = await supabaseClient
-      .from("profiles")
-      .select("id, username, apn_tokens!inner(token)")
-      .in("username", [data.username, data.from]);
 
-    if (error) {
-      console.error("Error fetching users:", error);
+    // Fetch sender data and the recipient data in a single query
+    const [
+      { data: sender, error: senderError },
+      { data: recipiant, error: recipiantError },
+    ] = await Promise.all([
+      supabaseClient.auth.getUser(),
+      privilegedSupabaseClient
+        .from("profiles")
+        .select("id, username, apn_tokens(token)")
+        .eq("username", data.username)
+        .single(),
+    ]);
+
+    if (senderError || recipiantError || !sender || !recipiant) {
+      console.error("Error fetching users:", senderError, recipiantError);
       return new Response("Error fetching users", { status: 500 });
-    }
-
-    const fromUser = users.find((u: UserProfile) => u.username === data.from);
-    const toUser = users.find((u: UserProfile) => u.username === data.username);
-
-    if (!fromUser || !toUser) {
-      return new Response("One or both users not found", { status: 404 });
     }
 
     // Create the friendship relationship
     const { error: friendshipError } = await supabaseClient
       .from("friends")
       .insert({
-        user_id: fromUser.id,
-        friend_id: toUser.id,
+        user_id: sender.user.id,
+        friend_id: recipiant.id,
         confirmed: false,
       });
 
@@ -150,15 +130,21 @@ Deno.serve(async (req) => {
 
     // Send push notification - if this fails, we still return success since friendship was created
     await sendFriendRequestNotification(
-      fromUser.username,
-      toUser.username,
-      toUser.apn_tokens[0].token,
+      {
+        username: sender.user.user_metadata.username,
+        id: sender.user.id,
+      },
+      {
+        username: recipiant.username,
+        id: recipiant.id,
+      },
+      recipiant.apn_tokens[0].token,
     );
 
     return new Response("Friend request sent", { status: 200 });
   } catch (err) {
     console.error("Unexpected error:", err);
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response("Internal Server Error", { status: 400 });
   }
 });
 

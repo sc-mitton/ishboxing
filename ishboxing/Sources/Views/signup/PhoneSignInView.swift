@@ -5,12 +5,12 @@ struct PhoneSignInView: View {
     @State private var phoneNumber = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @Binding var navigationPath: NavigationPath
     @FocusState private var isPhoneNumberFocused: Bool
+    @EnvironmentObject private var userManagement: UserManagement
+    @EnvironmentObject private var router: Router
 
-    init(navigationPath: Binding<NavigationPath>) {
+    init() {
         self.supabaseService = SupabaseService.shared
-        self._navigationPath = navigationPath
     }
 
     var formattedPhoneNumber: String {
@@ -41,7 +41,7 @@ struct PhoneSignInView: View {
                     Spacer()
                 }
 
-                Text("Enter your phone number")
+                Text("Enter your phone number ")
                     .font(.bangers(size: 28))
                     .foregroundColor(.ishRed)
                     .padding(.top, geometry.size.height > 800 ? 0 : 50)
@@ -73,7 +73,7 @@ struct PhoneSignInView: View {
                         if isLoading {
                             ProgressView()
                         } else {
-                            Text("Continue")
+                            Text("Continue ")
                                 .font(.bangers(size: 20))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -109,7 +109,8 @@ struct PhoneSignInView: View {
         do {
             try await supabaseService.signInWithPhoneNumber(e164PhoneNumber)
             await MainActor.run {
-                navigationPath.append(OTPRoute(phoneNumber: phoneNumber))
+                userManagement.phoneNumber = phoneNumber
+                router.path.append("otp")
             }
         } catch {
             errorMessage = error.localizedDescription

@@ -1,14 +1,13 @@
-
-create policy "meeting owners can add users"
-on "public"."meeting_users"
+create policy "fight owners can add users"
+on "public"."fight_users"
 for insert
 with check (
   exists (
     select 1
-    from meeting_users as mu
-    where mu.user_id = auth.uid()
-      and mu.meeting_topic = meeting_users.meeting_topic
-      and mu.is_owner = true
+    from fight_users as fu
+    where fu.user_id = auth.uid()
+      and fu.fight_topic = fight_users.fight_topic
+      and fu.is_owner = true
   )
 );
 
@@ -21,10 +20,10 @@ with check (
     select
       user_id
     from
-      meeting_users
+      fight_users
     where
       user_id = (select auth.uid())
-      and meeting_topic = (select realtime.topic())
+      and fight_topic = (select realtime.topic())
       and realtime.messages.extension in ('broadcast')
   )
 );
@@ -38,10 +37,10 @@ exists (
     select
       user_id
     from
-      meeting_users
+      fight_users
     where
       user_id = (select auth.uid())
-      and meeting_topic = (select realtime.topic())
+      and fight_topic = (select realtime.topic())
       and realtime.messages.extension in ('broadcast')
   )
 );

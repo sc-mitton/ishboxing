@@ -76,36 +76,22 @@ struct MainView: View {
                     )
                 }
             }
-            .onReceive(
-                NotificationCenter.default.publisher(
-                    for: NSNotification.Name("FightNotification"))
-            ) { notification in
-                if let fight = notification.userInfo?["fight"] as? Fight {
-                    handleFightNotification(fight)
-                }
-            }
             .task {
                 await friendManagement.fetchFriends()
             }
             .onAppear {
                 requestPermissionsIfNeeded()
                 registerForPushNotifications()
+                setupNotificationObserver()
+            }
+            .onDisappear {
+                NotificationCenter.default.removeObserver(self)
             }
         }
     }
 
     private func initiateFight(with friend: User) {
         selectedFriend = friend
-        navigateToFight = true
-    }
-
-    private func handleFightNotification(_ fight: Fight) {
-        notificationFight = fight
-        if let fromUserId = friendManagement.friends.first(where: {
-            $0.id.uuidString == fight.from
-        }) {
-            selectedFriend = fromUserId
-        }
         navigateToFight = true
     }
 
@@ -121,15 +107,36 @@ struct MainView: View {
     }
 
     private func requestPermissionsIfNeeded() {
-        if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .video) { granted in
+        Task {
+            // Request camera permission first
+            if AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+                let granted = await AVCaptureDevice.requestAccess(for: .video)
                 print("Camera permission: \(granted)")
             }
-        }
 
-        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .audio) { granted in
+            // Then request microphone permission
+            if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+                let granted = await AVCaptureDevice.requestAccess(for: .audio)
                 print("Microphone permission: \(granted)")
+            }
+        }
+    }
+
+    private func setupNotificationObserver() {
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("FightNotificationReceived"),
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let fight = notification.userInfo?["fight"] as? Fight
+            else { return }
+
+            // Find the friend who initiated the fight
+            if let friend = friendManagement.friends.first(where: { $0.id.uuidString == fight.from }
+            ) {
+                self.selectedFriend = friend
+                self.notificationFight = fight
+                self.navigateToFight = true
             }
         }
     }

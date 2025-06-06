@@ -108,12 +108,9 @@ class SupabaseService: ObservableObject {
     }
 
     func updateUsername(_ username: String) async throws {
-        let session = try await client.auth.session
-        let userId = session.user.id
-        try await client.from("profiles")
-            .update(["username": username])
-            .eq("id", value: userId)
-            .execute()
+        try await client.auth.update(
+            user: UserAttributes(data: ["username": .string(username)])
+        )
     }
 
     func getFriends() async throws -> [User] {
@@ -140,20 +137,19 @@ class SupabaseService: ObservableObject {
     }
 
     func addFriend(_ username: String) async throws {
-        let session = try await client.auth.session
-        let userId = session.user.id
-        print("Adding friend, request body: \(["username": username, "from": userId.uuidString])")
         try await client.functions.invoke(
             "addFriend",
-            options: FunctionInvokeOptions(
-                body: ["username": username, "from": userId.uuidString]
-            ))
+            options: FunctionInvokeOptions(body: ["username": username])
+        )
     }
 
-    func confirmFriendship(_ friendshipId: String) async throws {
+    func confirmFriendship(_ friendId: String) async throws {
+        let session = try await client.auth.session
+        let userId = session.user.id
         try await client.from("friends")
             .update(["confirmed": true])
-            .eq("id", value: friendshipId)
+            .eq("user_id", value: userId)
+            .eq("friend_id", value: friendId)
             .execute()
     }
 
@@ -187,10 +183,10 @@ class SupabaseService: ObservableObject {
             .from("apn_tokens")
             .upsert(
                 [
-                    "user_id": userId.uuidString,
+                    "profile_id": userId.uuidString,
                     "token": token,
                     "device_id": deviceId,
-                ], onConflict: "user_id,device_id"
+                ], onConflict: "profile_id,device_id"
             )
             .execute()
     }
