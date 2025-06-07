@@ -1,6 +1,6 @@
-public struct Match: Codable {
-    public let from: String
-    public let to: String
+public struct Match: Identifiable, Codable {
+    public let from: User
+    public let to: User
     public let id: String
 }
 

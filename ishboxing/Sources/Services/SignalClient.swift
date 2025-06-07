@@ -47,32 +47,33 @@ final class SignalClient {
 
     func startMatch(with userId: String) async {
         self.channelId = UUID().uuidString
-        let match = Match(from: self.userId, to: userId, id: self.channelId)
+        let match = Match(
+            from: User(id: UUID(uuidString: self.userId)!, username: ""),
+            to: User(id: UUID(uuidString: userId)!, username: ""),
+            id: self.channelId
+        )
+        await self.createMatch(match: match)
+        await self.addChallengedUserToMatch(match: match)
         await self.supabase.openSocketChannel(match.id)
         startConnectionTimeoutTimer()
-        await notifyUser(match: match)
     }
 
-    func notifyUser(match: Match) async {
-        // Send initial match request via Supabase Functions
+    func createMatch(match: Match) async {
         do {
-            let data = try self.encoder.encode(match)
-            let response: Response = try await self.supabase.client.functions.invoke(
-                "alertUser",
-                options: FunctionInvokeOptions(
-                    headers: [
-                        "Authorization": "Bearer \(self.supabase.client.auth.session.accessToken)"
-                    ],
-                    body: data
-                )
-            )
-
-            guard response.status == 200 else {
-                throw SignalError.serverError(statusCode: response.status)
-            }
+            try await self.supabase.client.from("matches").insert(["topic": match.id]).execute()
         } catch {
             delegate?.signalClient(self, didError: error)
-            return
+        }
+    }
+
+    func addChallengedUserToMatch(match: Match) async {
+        do {
+            try await self.supabase.client.from("match_users").insert([
+                "match_topic": match.id,
+                "profile_id": match.to.id.uuidString,
+            ]).execute()
+        } catch {
+            delegate?.signalClient(self, didError: error)
         }
     }
 

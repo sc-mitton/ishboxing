@@ -14,7 +14,6 @@ struct HomeView: View {
     @StateObject private var friendManagement = FriendManagement.shared
     @StateObject private var userManagement = UserManagement()
     @State private var selectedFriend: User?
-    @State private var navigateToMatch = false
     @State private var notificationMatch: Match?
     @State private var showMatchRequestModal = false
     @State private var newFriendUsername = ""
@@ -66,18 +65,20 @@ struct HomeView: View {
                     FriendsListView(onMatchInitiated: initiateMatch)
                 }
             }
-            .fullScreenCover(isPresented: $navigateToMatch) {
+            .fullScreenCover(
+                isPresented: Binding(
+                    get: { selectedFriend != nil },
+                    set: { if !$0 { selectedFriend = nil } }
+                )
+            ) {
                 if let friend = selectedFriend {
-                    MatchView(
-                        friend: friend,
-                        match: notificationMatch
-                    )
+                    MatchView(friend: friend, match: notificationMatch)
                 }
             }
             .sheet(isPresented: $showMatchRequestModal) {
                 if let match = notificationMatch {
                     MatchRequestModalView(match: match) {
-                        navigateToMatch = true
+                        selectedFriend = match.from
                     }
                 }
             }
@@ -97,7 +98,6 @@ struct HomeView: View {
 
     private func initiateMatch(with friend: User) {
         selectedFriend = friend
-        navigateToMatch = true
     }
 
     private func registerForPushNotifications() {
@@ -138,7 +138,7 @@ struct HomeView: View {
 
             // Find the friend who initiated the match
             if let friend = friendManagement.unifiedFriends.first(where: {
-                $0.user.id.uuidString == match.from
+                $0.user.id.uuidString == match.from.id.uuidString
             }) {
                 self.selectedFriend = friend.user
                 self.notificationMatch = match

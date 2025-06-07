@@ -70,17 +70,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     private func handleMatchNotification(_ userInfo: [AnyHashable: Any]) {
-        if let matchData = userInfo["match"] as? [String: String],
-            let from = matchData["from"],
-            let to = matchData["to"],
-            let id = matchData["id"]
-        {
-            let match = Match(from: from, to: to, id: id)
+        if let matchData = userInfo["data"] as? Match {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(
                     name: NSNotification.Name("MatchNotificationReceived"),
                     object: nil,
-                    userInfo: ["match": match]
+                    userInfo: ["match": matchData]
                 )
             }
         }

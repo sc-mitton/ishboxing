@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION execute_notify_match_edge_function()
+CREATE OR REPLACE FUNCTION execute_notify_challenged_user_edge_function()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -9,7 +9,7 @@ DECLARE
 BEGIN
     -- Perform the HTTP POST request
     PERFORM "net"."http_post"(
-        sb_base_functions_url || '/notifyOfMatch',
+        sb_base_functions_url || '/notifyChallengedUser',
         jsonb_build_object('data', to_jsonb(NEW)),
         headers := jsonb_build_object(
             'Content-Type', 'application/json',
@@ -20,7 +20,7 @@ BEGIN
 END $$;
 
 -- Create the Trigger and Execute the Function
-CREATE TRIGGER execute_notify_match_edge_function
+CREATE TRIGGER execute_notify_challenged_user_edge_function
 AFTER INSERT ON public.match_users
 FOR EACH ROW
-EXECUTE FUNCTION execute_notify_match_edge_function();
+EXECUTE FUNCTION execute_notify_challenged_user_edge_function();

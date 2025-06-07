@@ -27,12 +27,16 @@ struct MatchView: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 20) {
-            }
-            .padding()
-            .navigationTitle("Fight")
-            .navigationBarTitleDisplayMode(.inline)
+        VStack(spacing: 20) {
+            Text("Match")
+                .font(.bangers(size: 28))
+                .foregroundColor(.white)
+                .padding(.horizontal, 4)
+
+            Text("Match")
+                .font(.bangers(size: 28))
         }
+        .padding()
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
