@@ -19,7 +19,7 @@ alter table public.match_users enable row level security;
 create or replace function public.handle_new_match()
 returns trigger as $$
 begin
-  insert into public.match_users (user_id, match_topic, is_challenger)
+  insert into public.match_users (profile_id, match_topic, is_challenger)
   values (auth.uid(), new.topic, true);
   return new;
 end;

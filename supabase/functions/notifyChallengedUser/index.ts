@@ -41,7 +41,7 @@ const client = new ApnsClient({
 });
 
 interface MatchUser {
-  user_id: string;
+  profile_id: string;
   match_topic: string;
   is_challenger: boolean;
   is_challenged: boolean;
@@ -81,6 +81,12 @@ Deno.serve(async (req) => {
   try {
     const data = await req.json() as MatchUser;
 
+    if (!data.is_challenged) {
+      return new Response(JSON.stringify({ error: "User is not challenged" }), {
+        status: 200,
+      });
+    }
+
     // Query for owner of match
     const { data: match } = await privilegedSupabaseClient.from(
       "match_users",
@@ -99,7 +105,7 @@ Deno.serve(async (req) => {
     // Query for the challenger and challenged to get their user name and the apn token of the challenged user
     const { data: users } = await privilegedSupabaseClient.from("profiles")
       .select("id, username, apn_tokens(token)")
-      .in("id", [match.profile_id, data.user_id])
+      .in("id", [match.profile_id, data.profile_id])
       .throwOnError();
 
     if (!users || users.length !== 2) {
