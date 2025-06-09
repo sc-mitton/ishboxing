@@ -1,7 +1,15 @@
 
-# Notes on WebRTC peer-to-peer connection process
+# Ish Boxing App
 
-## Signaling
+## Local Development
+
+Make sure to have supabase installed
+
+`supabase init`
+
+Open xcode, build for a device, now you're good to go!
+
+## Docs
 
 ### Sending Offer and Receiving Answer
 
@@ -17,9 +25,3 @@ Steps:
 6. If the user does acknowledge the notification then their app is opened
 7. Once the app is opened, it connects to the supabse broadcast channel and notifies the other user that they're connected
 8. Initiator and sender exchange necessary information over the broadcast channel
-
-## Connecting
-
-## Securing
-
-## Communicating
