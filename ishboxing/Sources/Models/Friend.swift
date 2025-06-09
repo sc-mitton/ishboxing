@@ -12,11 +12,17 @@ public struct User: Identifiable, Codable {
 
 public struct FriendResponse: Codable {
     public let id: UUID
+    public let user_id: UUID
+    public let friend_id: UUID
     public let friend: FriendUser
+    public let user: FriendUser
 
-    public init(id: UUID, friend: FriendUser) {
+    public init(id: UUID, user_id: UUID, friend_id: UUID, friend: FriendUser, user: FriendUser) {
         self.id = id
+        self.user_id = user_id
+        self.friend_id = friend_id
         self.friend = friend
+        self.user = user
     }
 }
 

@@ -41,7 +41,7 @@ final class SignalClient {
 
     func joinMatch(_ match: Match) async {
         self.channelId = match.id
-        await self.supabase.openSocketChannel(self.channelId)
+        await self.openMatchSocketChannel(self.channelId)
         startConnectionTimeoutTimer()
     }
 
@@ -54,7 +54,7 @@ final class SignalClient {
         )
         await self.createMatch(match: match)
         await self.addChallengedUserToMatch(match: match)
-        await self.supabase.openSocketChannel(match.id)
+        await self.openMatchSocketChannel(match.id)
         startConnectionTimeoutTimer()
     }
 
@@ -71,6 +71,7 @@ final class SignalClient {
             try await self.supabase.client.from("match_users").insert([
                 "match_topic": match.id,
                 "profile_id": match.to.id.uuidString,
+                "is_challenged": "true",
             ]).execute()
         } catch {
             delegate?.signalClient(self, didError: error)
@@ -101,41 +102,41 @@ final class SignalClient {
         channelId = ""
         channel = nil
     }
-}
 
-extension SignalClient: WebRTCClientDelegate {
-    func webRTCClient(_ client: WebRTCClient, didDiscoverLocalCandidate candidate: RTCIceCandidate)
-    {
-        Task {
+    // MARK: - Socket Methods
+    func openMatchSocketChannel(_ channelId: String) async {
+        self.channel = self.supabase.client.channel(channelId) { config in
+            config.isPrivate = true
+        }
+        await self.listenForBroadcastMessages()
+    }
+
+    private func listenForBroadcastMessages() async {
+        let broadcastStream = self.channel.broadcastStream(event: "broadcast")
+        await self.channel.subscribe()
+        for await broadcastMessage in broadcastStream {
+            let message: Message
+
             do {
-                try await self.supabase.broadcastMessage(
-                    Message.candidate(IceCandidate(from: candidate))
-                )
+                let jsonData = try JSONSerialization.data(withJSONObject: broadcastMessage)
+                message = try decoder.decode(Message.self, from: jsonData)
             } catch {
-                delegate?.signalClient(self, didError: error)
+                print("Error decoding message: \(error)")
+                return
             }
+            await self.handleBroadcastMessage(message)
         }
     }
 
-    func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
-    {
-        delegate?.signalClient(self, didStateChange: state)
-    }
-
-    func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data) {
-        print("Received data: \(data)")
-    }
-}
-
-extension SignalClient: SupabaseServiceDelegate {
-    func broadcasted(_ supabaseService: SupabaseService, didReceiveMessage message: Message) {
+    private func handleBroadcastMessage(_ message: Message) async {
+        print("handleBroadcastMessage: \(message)")
         switch message {
         case .joined(_):
             webRTCClient.offer { [weak self] sdp in
                 guard let self = self else { return }
                 Task {
                     do {
-                        try await self.supabase.broadcastMessage(
+                        try await self.broadcastMessage(
                             Message.sdp(SessionDescription(from: sdp))
                         )
                     } catch {
@@ -161,7 +162,7 @@ extension SignalClient: SupabaseServiceDelegate {
                 guard let self = self else { return }
                 Task {
                     do {
-                        try await self.supabase.broadcastMessage(
+                        try await self.broadcastMessage(
                             Message.sdp(SessionDescription(from: sdp))
                         )
                     } catch {
@@ -172,9 +173,32 @@ extension SignalClient: SupabaseServiceDelegate {
         }
     }
 
-    func broadcastChannelClosed(_ supabaseService: SupabaseService) {
-        closeConnection()
-        delegate?.signalClient(self, didError: SignalError.channelBroken)
+    func broadcastMessage(_ message: Message) async throws {
+        try await self.channel.broadcast(event: "broadcast", message: message)
+    }
+}
+
+extension SignalClient: WebRTCClientDelegate {
+    func webRTCClient(_ client: WebRTCClient, didDiscoverLocalCandidate candidate: RTCIceCandidate)
+    {
+        Task {
+            do {
+                try await self.broadcastMessage(
+                    Message.candidate(IceCandidate(from: candidate))
+                )
+            } catch {
+                delegate?.signalClient(self, didError: error)
+            }
+        }
+    }
+
+    func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
+    {
+        delegate?.signalClient(self, didStateChange: state)
+    }
+
+    func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data) {
+        print("Received data: \(data)")
     }
 }
 

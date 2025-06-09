@@ -35,12 +35,19 @@ create trigger on_match_created
 create policy "match owners can add users"
 on "public"."match_users"
 for insert
+to authenticated
 with check (
   exists (
     select 1
     from match_users as mu
     where mu.profile_id = auth.uid()
-      and mu.match_topic = match_users.match_topic
+      and mu.match_topic = match_topic
       and mu.is_challenger = true
   )
 );
+
+create policy "match members can select match users"
+on "public"."match_users"
+for select
+to authenticated
+using ( true );

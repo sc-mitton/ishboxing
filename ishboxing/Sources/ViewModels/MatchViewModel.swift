@@ -35,10 +35,11 @@ class MatchViewModel: ObservableObject {
 
     func connect() async {
         if let match = match {
-            print("connecting to match")
             await signalClient.joinMatch(match)
+            print("joined match")
         } else {
             await signalClient.startMatch(with: friend.id.uuidString)
+            print("started match")
         }
     }
 }

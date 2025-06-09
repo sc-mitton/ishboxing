@@ -133,18 +133,19 @@ struct HomeView: View {
             object: nil,
             queue: .main
         ) { notification in
-            guard let match = notification.userInfo?["match"] as? Match
-            else { return }
+            guard let match = notification.userInfo?["match"] as? Match else {
+                return
+            }
 
             // Find the friend who initiated the match
-            if let friend = friendManagement.unifiedFriends.first(where: {
+            if let friend = self.friendManagement.unifiedFriends.first(where: {
                 $0.user.id.uuidString == match.from.id.uuidString
             }) {
                 self.selectedFriend = friend.user
                 self.notificationMatch = match
 
                 // Only show the match
-                if !userManagement.isInMatch {
+                if !self.userManagement.isInMatch {
                     self.showMatchRequestModal = true
                 }
             }

@@ -9,8 +9,6 @@ class SupabaseService: ObservableObject {
     public let client: SupabaseClient
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
-    private var channel: RealtimeChannelV2!
-    weak var delegate: SupabaseServiceDelegate?
     static let shared = SupabaseService()
     static let serverURL = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String
     @Published var isAuthenticated = false
@@ -44,44 +42,16 @@ class SupabaseService: ObservableObject {
         return session != nil
     }
 
-    func openSocketChannel(_ channelId: String) async {
-        self.channel = self.client.channel(channelId) { config in
-            config.isPrivate = true
-        }
-        await self.listenForBroadcastMessages()
-    }
-
-    private func listenForBroadcastMessages() async {
-        let broadcastStream = self.channel.broadcastStream(event: "broadcast")
-        await self.channel.subscribe()
-        for await broadcastMessage in broadcastStream {
-            let message: Message
-
-            do {
-                let jsonData = try JSONSerialization.data(withJSONObject: broadcastMessage)
-                message = try decoder.decode(Message.self, from: jsonData)
-            } catch {
-                print("Error decoding message: \(error)")
-                return
-            }
-            await self.delegate?.broadcasted(self, didReceiveMessage: message)
-        }
-    }
-
-    func broadcastMessage(_ message: Message) async throws {
-        try await self.channel.broadcast(event: "broadcast", message: message)
-    }
-
     func addChannelAccess(_ channelId: String, owner: String, members: [String]) async throws {
         try await client.from("meeting_users")
             .upsert(
-                ["meeting_topic": channelId, "user_id": owner, "is_owner": "true"],
-                onConflict: "meeting_topic,user_id"
+                ["meeting_topic": channelId, "profile_id": owner, "is_owner": "true"],
+                onConflict: "meeting_topic,profile_id"
             )
             .execute()
         for member in members {
             try await client.from("meeting_users").insert([
-                "meeting_topic": channelId, "user_id": member, "is_owner": "false",
+                "meeting_topic": channelId, "profile_id": member, "is_owner": "false",
             ]).execute()
         }
     }
@@ -126,7 +96,12 @@ class SupabaseService: ObservableObject {
             .select(
                 """
                     id,
+                    user_id,
+                    friend_id,
                     friend:profiles!friends_friend_id_fkey (
+                        username
+                    ),
+                    user:profiles!friends_user_id_fkey (
                         username
                     )
                 """
@@ -137,11 +112,21 @@ class SupabaseService: ObservableObject {
 
         // Parse the response and create Friend objects
         let friendsData = try self.decoder.decode([FriendResponse].self, from: response.data)
+
         return friendsData.map { response in
-            User(
-                id: response.id,
-                username: response.friend.username
-            )
+            if response.user_id == session.user.id {
+                // Current user is user_id, so use friend's info
+                User(
+                    id: response.friend_id,
+                    username: response.friend.username
+                )
+            } else {
+                // Current user is friend_id, so use user's info
+                User(
+                    id: response.user_id,
+                    username: response.user.username
+                )
+            }
         }
     }
 

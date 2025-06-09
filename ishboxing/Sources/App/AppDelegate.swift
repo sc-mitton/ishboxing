@@ -5,6 +5,7 @@ import UserNotifications
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     let supabase = SupabaseService.shared
     let friendManagement = FriendManagement.shared
+    let notificationHandler = NotificationHandler.shared
 
     override init() {
         super.init()
@@ -42,6 +43,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        print("Notification received: \(response.notification.request.content)")
         handleNotification(response.notification.request.content)
         completionHandler()
     }
@@ -65,19 +67,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 await friendManagement.fetchFriends()
             }
         } else if catIdentifier == "MATCH_NOTIFICATION" {
-            handleMatchNotification(content.userInfo)
-        }
-    }
-
-    private func handleMatchNotification(_ userInfo: [AnyHashable: Any]) {
-        if let matchData = userInfo["data"] as? Match {
-            DispatchQueue.main.async {
-                NotificationCenter.default.post(
-                    name: NSNotification.Name("MatchNotificationReceived"),
-                    object: nil,
-                    userInfo: ["match": matchData]
-                )
-            }
+            notificationHandler.handleMatchNotification(content.userInfo)
         }
     }
 

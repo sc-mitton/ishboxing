@@ -50,6 +50,7 @@ interface MatchUser {
 const sendMatchNotification = async (
   from: { username: string; id: string },
   to: { username: string; id: string },
+  match: { id: string },
   apnToken: string,
 ): Promise<void> => {
   const notification = new Notification(apnToken, {
@@ -60,6 +61,7 @@ const sendMatchNotification = async (
     },
     category: "MATCH_NOTIFICATION",
     data: {
+      id: match.id,
       from: {
         id: from.id,
         username: from.username,
@@ -79,7 +81,7 @@ const sendMatchNotification = async (
 
 Deno.serve(async (req) => {
   try {
-    const data = await req.json() as MatchUser;
+    const { data } = await req.json() as { data: MatchUser };
 
     if (!data.is_challenged) {
       return new Response(JSON.stringify({ error: "User is not challenged" }), {
@@ -120,6 +122,7 @@ Deno.serve(async (req) => {
     await sendMatchNotification(
       challenger,
       challenged,
+      { id: data.match_topic },
       challenged.apn_tokens[0].token,
     );
 

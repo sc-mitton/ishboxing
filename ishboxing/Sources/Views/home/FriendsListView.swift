@@ -148,7 +148,7 @@ private struct FriendListItem: View {
             }
         }
         .padding()
-        .background(Color.white)
+        .background(Color(.systemGray3).opacity(0.2))
     }
 }
 
