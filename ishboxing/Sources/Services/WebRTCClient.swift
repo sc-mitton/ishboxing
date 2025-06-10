@@ -119,7 +119,7 @@ final class WebRTCClient: NSObject {
         }
 
         guard
-            let frontCamera =
+            let frontCamera: AVCaptureDevice =
                 (RTCCameraVideoCapturer.captureDevices().first { $0.position == .front }),
 
             // choose highest res
@@ -168,11 +168,13 @@ final class WebRTCClient: NSObject {
 
         // Audio
         let audioTrack = self.createAudioTrack()
+        print("adding audio track")
         self.peerConnection.add(audioTrack, streamIds: [streamId])
 
         // Video
         let videoTrack = self.createVideoTrack()
         self.localVideoTrack = videoTrack
+        print("adding video track")
         self.peerConnection.add(videoTrack, streamIds: [streamId])
         self.remoteVideoTrack =
             self.peerConnection.transceivers.first { $0.mediaType == .video }?.receiver.track

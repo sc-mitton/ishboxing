@@ -24,7 +24,9 @@ final class SignalClient {
     private let connectionTimeoutInterval: TimeInterval = 30  // 30 seconds timeout
     private var channelId: String = ""
     private var channel: RealtimeChannelV2!
+    private var subscription: RealtimeSubscription!
     private var connectionTimeoutTimer: Timer?
+    private var hasExchangedSDP: Bool = false  // Track SDP exchange status
 
     weak var delegate: SignalClientDelegate?
 
@@ -39,10 +41,24 @@ final class SignalClient {
         self.webRTCClient.delegate = self
     }
 
+    deinit {
+        Task { [weak self] in
+            guard let self = self else { return }
+            await self.supabase.client.removeChannel(self.channel)
+            self.subscription.cancel()
+            self.connectionTimeoutTimer?.invalidate()
+        }
+    }
+
     func joinMatch(_ match: Match) async {
         self.channelId = match.id
         await self.openMatchSocketChannel(self.channelId)
-        startConnectionTimeoutTimer()
+
+        do {
+            try await self.broadcastMessage(Message.joined(JoinedAck()))
+        } catch {
+            delegate?.signalClient(self, didError: error)
+        }
     }
 
     func startMatch(with userId: String) async {
@@ -108,34 +124,32 @@ final class SignalClient {
         self.channel = self.supabase.client.channel(channelId) { config in
             config.isPrivate = true
         }
-        await self.listenForBroadcastMessages()
-    }
-
-    private func listenForBroadcastMessages() async {
-        let broadcastStream = self.channel.broadcastStream(event: "broadcast")
-        await self.channel.subscribe()
-        for await broadcastMessage in broadcastStream {
-            let message: Message
-
+        self.subscription = self.channel.onBroadcast(event: "broadcast") { message in
             do {
-                let jsonData = try JSONSerialization.data(withJSONObject: broadcastMessage)
-                message = try decoder.decode(Message.self, from: jsonData)
+                guard let payload = message["payload"] else {
+                    return
+                }
+                let jsonData = try JSONSerialization.data(withJSONObject: payload.value)
+                let decodedMessage = try self.decoder.decode(Message.self, from: jsonData)
+                Task {
+                    await self.handleBroadcastMessage(decodedMessage)
+                }
             } catch {
-                print("Error decoding message: \(error)")
-                return
+                print("Error decoding message: \(message), error: \(error)")
             }
-            await self.handleBroadcastMessage(message)
         }
+        await self.channel.subscribe()
     }
 
     private func handleBroadcastMessage(_ message: Message) async {
-        print("handleBroadcastMessage: \(message)")
+        print("handleBroadcastMessage: \(String(describing: message).prefix(20))...")
         switch message {
         case .joined(_):
             webRTCClient.offer { [weak self] sdp in
                 guard let self = self else { return }
                 Task {
                     do {
+                        print("user joined match, sending offer: \(sdp)")
                         try await self.broadcastMessage(
                             Message.sdp(SessionDescription(from: sdp))
                         )
@@ -145,6 +159,7 @@ final class SignalClient {
                 }
             }
         case .candidate(let iceCandidate):
+            print("setting remote candidate")
             webRTCClient.set(remoteCandidate: iceCandidate.rtcIceCandidate) { [weak self] error in
                 guard let self = self else { return }
                 if let error = error {
@@ -152,6 +167,7 @@ final class SignalClient {
                 }
             }
         case .sdp(let sdp):
+            print("setting remote sdp")
             webRTCClient.set(remoteSdp: sdp.rtcSessionDescription) { [weak self] error in
                 guard let self = self else { return }
                 if let error = error {
@@ -170,6 +186,8 @@ final class SignalClient {
                     }
                 }
             }
+            self.hasExchangedSDP = true
+            print("hasExchangedSDP: \(self.hasExchangedSDP)")
         }
     }
 
@@ -183,9 +201,13 @@ extension SignalClient: WebRTCClientDelegate {
     {
         Task {
             do {
-                try await self.broadcastMessage(
-                    Message.candidate(IceCandidate(from: candidate))
-                )
+                if hasExchangedSDP {
+                    try await self.broadcastMessage(
+                        Message.candidate(IceCandidate(from: candidate))
+                    )
+                } else {
+                    print("Holding ICE candidate until SDP exchange is complete")
+                }
             } catch {
                 delegate?.signalClient(self, didError: error)
             }

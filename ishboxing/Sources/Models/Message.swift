@@ -18,11 +18,14 @@ extension Message: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
+        print("type: \(type), \(String(describing: RTCSessionDescription.self))")
         switch type {
         case String(describing: RTCSessionDescription.self):
-            self = .sdp(try container.decode(SessionDescription.self, forKey: .payload))
+            self = .sdp(try container.decode(SessionDescription.self, forKey: .data))
         case String(describing: IceCandidate.self):
-            self = .candidate(try container.decode(IceCandidate.self, forKey: .payload))
+            self = .candidate(try container.decode(IceCandidate.self, forKey: .data))
+        case "JoinedAck":
+            self = .joined(JoinedAck())
         default:
             throw DecodeError.unknownType
         }
@@ -32,14 +35,14 @@ extension Message: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case .sdp(let sessionDescription):
-            try container.encode(sessionDescription, forKey: .payload)
-            try container.encode(String(describing: SessionDescription.self), forKey: .type)
+            try container.encode(sessionDescription, forKey: .data)
+            try container.encode(String(describing: RTCSessionDescription.self), forKey: .type)
         case .candidate(let iceCandidate):
-            try container.encode(iceCandidate, forKey: .payload)
+            try container.encode(iceCandidate, forKey: .data)
             try container.encode(String(describing: IceCandidate.self), forKey: .type)
-        case .joined(let joinedAck):
-            try container.encode(joinedAck, forKey: .payload)
-            try container.encode(String(describing: JoinedAck.self), forKey: .type)
+        case .joined(_):
+            try container.encode([String: String](), forKey: .data)
+            try container.encode("JoinedAck", forKey: .type)
         }
     }
 
@@ -48,6 +51,6 @@ extension Message: Codable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case type, payload
+        case type, data
     }
 }

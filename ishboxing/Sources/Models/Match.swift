@@ -31,4 +31,5 @@ public struct MatchNotification: Codable {
 
 public struct JoinedAck: Codable {
     public static let message = "joined"
+    public init() {}
 }

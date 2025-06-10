@@ -11,6 +11,7 @@ protocol MatchViewModelDelegate: AnyObject {
 class MatchViewModel: ObservableObject {
     private let friend: User
     private let signalClient: SignalClient
+    private let webRTCClient: WebRTCClient
     private let match: Match?
     weak var delegate: MatchViewModelDelegate?
 
@@ -20,12 +21,14 @@ class MatchViewModel: ObservableObject {
 
     init(
         signalClient: SignalClient,
+        webRTCClient: WebRTCClient,
         friend: User,
         match: Match?
     ) {
         self.friend = friend
         self.signalClient = signalClient
         self.match = match
+        self.webRTCClient = webRTCClient
         self.signalClient.delegate = self
 
         Task {
@@ -36,11 +39,17 @@ class MatchViewModel: ObservableObject {
     func connect() async {
         if let match = match {
             await signalClient.joinMatch(match)
-            print("joined match")
         } else {
             await signalClient.startMatch(with: friend.id.uuidString)
-            print("started match")
         }
+    }
+
+    func muteAudio() {
+        webRTCClient.muteAudio()
+    }
+
+    func unmuteAudio() {
+        webRTCClient.unmuteAudio()
     }
 }
 

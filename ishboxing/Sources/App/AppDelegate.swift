@@ -43,7 +43,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        print("Notification received: \(response.notification.request.content)")
         handleNotification(response.notification.request.content)
         completionHandler()
     }
