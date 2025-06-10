@@ -24,14 +24,15 @@ final class WebRTCClient: NSObject {
     private let rtcAudioSession = RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "audio")
     private let mediaConstrains = [
-        kRTCMediaConstraintsOfferToReceiveAudio: kRTCMediaConstraintsValueFalse,
-        kRTCMediaConstraintsOfferToReceiveVideo: kRTCMediaConstraintsValueFalse,
+        kRTCMediaConstraintsOfferToReceiveAudio: kRTCMediaConstraintsValueTrue,
+        kRTCMediaConstraintsOfferToReceiveVideo: kRTCMediaConstraintsValueTrue,
     ]
     private var videoCapturer: RTCVideoCapturer?
     private var localVideoTrack: RTCVideoTrack?
     private var remoteVideoTrack: RTCVideoTrack?
     private var localDataChannel: RTCDataChannel?
     private var remoteDataChannel: RTCDataChannel?
+    private var localVideoRenderer: RTCVideoRenderer?
 
     @available(*, unavailable)
     override init() {
@@ -117,6 +118,7 @@ final class WebRTCClient: NSObject {
         guard let capturer = self.videoCapturer as? RTCCameraVideoCapturer else {
             return
         }
+        self.localVideoRenderer = renderer
 
         guard
             let frontCamera: AVCaptureDevice =
@@ -146,6 +148,13 @@ final class WebRTCClient: NSObject {
             fps: Int(fps.maxFrameRate))
 
         self.localVideoTrack?.add(renderer)
+    }
+
+    func stopCaptureLocalVideo() {
+        if let renderer = self.localVideoRenderer {
+            self.localVideoTrack?.remove(renderer)
+            self.localVideoRenderer = nil
+        }
     }
 
     func renderRemoteVideo(to renderer: RTCVideoRenderer) {
@@ -179,6 +188,8 @@ final class WebRTCClient: NSObject {
         self.remoteVideoTrack =
             self.peerConnection.transceivers.first { $0.mediaType == .video }?.receiver.track
             as? RTCVideoTrack
+
+        print("Remote video track setup: \(String(describing: self.remoteVideoTrack))")
 
         // Data
         if let dataChannel = createDataChannel() {
@@ -224,6 +235,23 @@ final class WebRTCClient: NSObject {
     func sendData(_ data: Data) {
         let buffer = RTCDataBuffer(data: data, isBinary: true)
         self.remoteDataChannel?.sendData(buffer)
+    }
+
+    func close() {
+        debugPrint("Closing WebRTC connection")
+        self.peerConnection.close()
+        if let renderer = self.localVideoRenderer {
+            self.localVideoTrack?.remove(renderer)
+        }
+        if let capturer = self.videoCapturer as? RTCCameraVideoCapturer {
+            capturer.stopCapture()
+        }
+        self.localVideoTrack = nil
+        self.localVideoRenderer = nil
+        self.remoteVideoTrack = nil
+        self.localDataChannel = nil
+        self.remoteDataChannel = nil
+        self.videoCapturer = nil
     }
 }
 

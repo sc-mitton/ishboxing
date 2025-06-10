@@ -81,6 +81,14 @@ class SupabaseService: ObservableObject {
         )
     }
 
+    func hasProfile() async throws -> Bool {
+        let session = try await client.auth.session
+        let userId = session.user.id
+        let response = try await client.from("profiles").select("*").eq("id", value: userId)
+            .single().execute()
+        return response.data.count > 0
+    }
+
     func updateUsername(_ username: String) async throws {
         try await client.auth.update(
             user: UserAttributes(data: ["username": .string(username)])
@@ -166,9 +174,10 @@ class SupabaseService: ObservableObject {
     }
 
     func deleteFriendship(_ friendshipId: String) async throws {
+        debugPrint("Deleting friendship: \(friendshipId)")
         try await client.from("friends")
             .delete()
-            .eq("id", value: friendshipId)
+            .or("friend_id.eq.\(friendshipId),user_id.eq.\(friendshipId)")
             .execute()
     }
 

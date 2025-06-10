@@ -18,6 +18,7 @@ struct HomeView: View {
     @State private var showMatchRequestModal = false
     @State private var newFriendUsername = ""
     @State private var addFriendError: String?
+    @State private var showMatchView = false
 
     var body: some View {
         NavigationStack {
@@ -67,18 +68,37 @@ struct HomeView: View {
             }
             .fullScreenCover(
                 isPresented: Binding(
-                    get: { selectedFriend != nil },
-                    set: { if !$0 { selectedFriend = nil } }
+                    get: { showMatchView && selectedFriend != nil },
+                    set: {
+                        if !$0 {
+                            showMatchView = false
+                            selectedFriend = nil
+                        }
+                    }
                 )
             ) {
                 if let friend = selectedFriend {
-                    MatchView(friend: friend, match: notificationMatch)
+                    MatchView(friend: friend, match: notificationMatch) {
+                        showMatchView = false
+                        selectedFriend = nil
+                        notificationMatch = nil
+                    }
                 }
             }
-            .sheet(isPresented: $showMatchRequestModal) {
+            .fullScreenCover(
+                isPresented: Binding(
+                    get: { showMatchRequestModal && notificationMatch != nil },
+                    set: {
+                        if !$0 {
+                            showMatchRequestModal = false
+                            notificationMatch = nil
+                        }
+                    }
+                )
+            ) {
                 if let match = notificationMatch {
                     MatchRequestModalView(match: match) {
-                        selectedFriend = match.from
+                        showMatchView = true
                     }
                 }
             }
@@ -98,6 +118,7 @@ struct HomeView: View {
 
     private func initiateMatch(with friend: User) {
         selectedFriend = friend
+        showMatchView = true
     }
 
     private func registerForPushNotifications() {
@@ -145,6 +166,7 @@ struct HomeView: View {
                 self.notificationMatch = match
 
                 // Only show the match
+                debugPrint("User is in match: \(self.userManagement.isInMatch)")
                 if !self.userManagement.isInMatch {
                     self.showMatchRequestModal = true
                 }

@@ -7,21 +7,12 @@ struct FriendsListView: View {
     @State private var showAddFriendModalView = false
 
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                Section(header: FriendsListHeader(showAddFriendModalView: $showAddFriendModalView))
-                {
-                    FriendsListContent(
-                        friendManagement: friendManagement,
-                        onMatchInitiated: onMatchInitiated
-                    )
-                }
-            }
-        }
-        .refreshable {
-            Task {
-                await friendManagement.fetchFriends()
-            }
+        VStack(spacing: 0) {
+            FriendsListHeader(showAddFriendModalView: $showAddFriendModalView)
+            FriendsListContent(
+                friendManagement: friendManagement,
+                onMatchInitiated: onMatchInitiated
+            )
         }
         .background(Color(.systemGray6))
         .cornerRadius(20, corners: [.topLeft, .topRight])
@@ -70,26 +61,61 @@ private struct FriendsListContent: View {
 
     var body: some View {
         if friendManagement.isLoading {
-            ProgressView()
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
+            ScrollView {
+                Spacer()
+                ProgressView()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemGray6))
+            .refreshable {
+                Task {
+                    await friendManagement.fetchFriends()
+                }
+            }
         } else if let error = friendManagement.errorMessage {
-            Text(error)
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
-        } else if friendManagement.unifiedFriends.isEmpty {
-            Text("No friends yet")
-                .foregroundColor(.gray)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding()
+            VStack {
+                Spacer()
+                Text(error)
+                    .foregroundColor(.red)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding()
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemGray6))
         } else {
-            ForEach(friendManagement.unifiedFriends) { unifiedFriend in
-                FriendListItem(
-                    unifiedFriend: unifiedFriend,
-                    onMatchInitiated: onMatchInitiated,
-                    friendManagement: friendManagement
-                )
+            List {
+                if friendManagement.unifiedFriends.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text("No friends yet")
+                            .foregroundColor(.gray)
+                            .padding()
+                        Spacer()
+                    }
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                } else {
+                    ForEach(friendManagement.unifiedFriends) { unifiedFriend in
+                        FriendListItem(
+                            unifiedFriend: unifiedFriend,
+                            onMatchInitiated: onMatchInitiated,
+                            friendManagement: friendManagement
+                        )
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                    }
+                }
+            }
+            .listStyle(PlainListStyle())
+            .background(Color(.systemGray6))
+            .refreshable {
+                Task {
+                    await friendManagement.fetchFriends()
+                }
             }
         }
     }
@@ -149,6 +175,17 @@ private struct FriendListItem: View {
         }
         .padding()
         .background(Color(.systemGray3).opacity(0.2))
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                Task {
+                    debugPrint("Friend: \(unifiedFriend)")
+                    debugPrint("Deleting friend: \(unifiedFriend.user.id)")
+                    try? await friendManagement.deleteFriend(unifiedFriend.user.id)
+                }
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }
 

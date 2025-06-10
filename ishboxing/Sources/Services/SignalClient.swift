@@ -25,7 +25,8 @@ final class SignalClient {
     private var channelId: String = ""
     private var channel: RealtimeChannelV2!
     private var subscription: RealtimeSubscription!
-    private var connectionTimeoutTimer: Timer?
+    var workItem: DispatchWorkItem?
+
     private var hasExchangedSDP: Bool = false  // Track SDP exchange status
 
     weak var delegate: SignalClientDelegate?
@@ -46,7 +47,7 @@ final class SignalClient {
             guard let self = self else { return }
             await self.supabase.client.removeChannel(self.channel)
             self.subscription.cancel()
-            self.connectionTimeoutTimer?.invalidate()
+            self.workItem?.cancel()
         }
     }
 
@@ -96,27 +97,28 @@ final class SignalClient {
 
     private func startConnectionTimeoutTimer() {
         // Cancel any existing timer
-        connectionTimeoutTimer?.invalidate()
-
-        // Create new timer
-        connectionTimeoutTimer = Timer.scheduledTimer(
-            withTimeInterval: connectionTimeoutInterval, repeats: false
-        ) { [weak self] _ in
-            guard let self = self else { return }
+        debugPrint("Dispatching connection timeout timer")
+        workItem = DispatchWorkItem {
+            debugPrint("Timeout timer fired")
             self.handleConnectionTimeout()
         }
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + connectionTimeoutInterval, execute: workItem!)
     }
 
     private func handleConnectionTimeout() {
+        debugPrint("Handling connection timeout")
         delegate?.signalClient(self, didTimeout: true)
-        closeConnection()
     }
 
-    private func closeConnection() {
-        connectionTimeoutTimer?.invalidate()
-        connectionTimeoutTimer = nil
+    func cleanUp() async {
+        debugPrint("Cleaning up SignalClient")
+        workItem?.cancel()
+        workItem = nil
         channelId = ""
         channel = nil
+        hasExchangedSDP = false
+        webRTCClient.close()
     }
 
     // MARK: - Socket Methods
@@ -142,14 +144,14 @@ final class SignalClient {
     }
 
     private func handleBroadcastMessage(_ message: Message) async {
-        print("handleBroadcastMessage: \(String(describing: message).prefix(20))...")
+        debugPrint("handleBroadcastMessage: \(String(describing: message).prefix(20))...")
         switch message {
         case .joined(_):
             webRTCClient.offer { [weak self] sdp in
                 guard let self = self else { return }
                 Task {
                     do {
-                        print("user joined match, sending offer: \(sdp)")
+                        debugPrint("user joined match, sending offer: \(sdp)")
                         try await self.broadcastMessage(
                             Message.sdp(SessionDescription(from: sdp))
                         )
@@ -159,7 +161,7 @@ final class SignalClient {
                 }
             }
         case .candidate(let iceCandidate):
-            print("setting remote candidate")
+            debugPrint("setting remote candidate")
             webRTCClient.set(remoteCandidate: iceCandidate.rtcIceCandidate) { [weak self] error in
                 guard let self = self else { return }
                 if let error = error {
@@ -167,7 +169,7 @@ final class SignalClient {
                 }
             }
         case .sdp(let sdp):
-            print("setting remote sdp")
+            debugPrint("setting remote sdp")
             webRTCClient.set(remoteSdp: sdp.rtcSessionDescription) { [weak self] error in
                 guard let self = self else { return }
                 if let error = error {
@@ -187,7 +189,7 @@ final class SignalClient {
                 }
             }
             self.hasExchangedSDP = true
-            print("hasExchangedSDP: \(self.hasExchangedSDP)")
+            debugPrint("hasExchangedSDP: \(self.hasExchangedSDP)")
         }
     }
 
@@ -206,7 +208,7 @@ extension SignalClient: WebRTCClientDelegate {
                         Message.candidate(IceCandidate(from: candidate))
                     )
                 } else {
-                    print("Holding ICE candidate until SDP exchange is complete")
+                    debugPrint("Holding ICE candidate until SDP exchange is complete")
                 }
             } catch {
                 delegate?.signalClient(self, didError: error)
@@ -217,10 +219,15 @@ extension SignalClient: WebRTCClientDelegate {
     func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
     {
         delegate?.signalClient(self, didStateChange: state)
+
+        if state == .connected {
+            debugPrint("Connection established, canceling timeout timer")
+            workItem?.cancel()
+        }
     }
 
     func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data) {
-        print("Received data: \(data)")
+        debugPrint("Received data: \(data)")
     }
 }
 

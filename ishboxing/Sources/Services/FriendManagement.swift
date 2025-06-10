@@ -94,6 +94,11 @@ class FriendManagement: ObservableObject {
         try await supabaseService.denyFriendship(requestId.uuidString)
         await fetchFriends()  // Refresh the friends list
     }
+
+    func deleteFriend(_ friendId: UUID) async throws {
+        try await supabaseService.deleteFriendship(friendId.uuidString)
+        await fetchFriends()  // Refresh the friends list
+    }
 }
 
 enum FriendError: LocalizedError {

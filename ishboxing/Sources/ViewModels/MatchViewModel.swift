@@ -2,10 +2,7 @@ import Foundation
 import WebRTC
 
 protocol MatchViewModelDelegate: AnyObject {
-    func didConnect()
     func didDisconnect()
-    func didTimeout()
-    func didError(_ error: Error)
 }
 
 class MatchViewModel: ObservableObject {
@@ -13,24 +10,28 @@ class MatchViewModel: ObservableObject {
     private let signalClient: SignalClient
     private let webRTCClient: WebRTCClient
     private let match: Match?
-    weak var delegate: MatchViewModelDelegate?
+    private let onDismiss: () -> Void
+    weak var matchViewModelDelegate: MatchViewModelDelegate?
 
     @Published var errorMessage: String?
     @Published var hasTimedOut = false
     @Published var webRTCConnectionState: RTCIceConnectionState?
+    @Published var isMuted = false
+    @Published var showTimeoutAlert = false
 
     init(
         signalClient: SignalClient,
         webRTCClient: WebRTCClient,
         friend: User,
-        match: Match?
+        match: Match?,
+        onDismiss: @escaping () -> Void
     ) {
         self.friend = friend
         self.signalClient = signalClient
         self.match = match
         self.webRTCClient = webRTCClient
+        self.onDismiss = onDismiss
         self.signalClient.delegate = self
-
         Task {
             await connect()
         }
@@ -46,10 +47,21 @@ class MatchViewModel: ObservableObject {
 
     func muteAudio() {
         webRTCClient.muteAudio()
+        isMuted = true
     }
 
     func unmuteAudio() {
         webRTCClient.unmuteAudio()
+        isMuted = false
+    }
+
+    func endMatch() {
+        webRTCClient.close()
+        matchViewModelDelegate?.didDisconnect()
+        onDismiss()
+        Task {
+            await signalClient.cleanUp()
+        }
     }
 }
 
@@ -59,10 +71,11 @@ extension MatchViewModel: SignalClientDelegate {
     }
 
     func signalClient(_ signalClient: SignalClient, didTimeout waitingForConnection: Bool) {
-        print("didTimeout: \(waitingForConnection)")
+        debugPrint("didTimeout: \(waitingForConnection)")
+        showTimeoutAlert = true
     }
 
     func signalClient(_ signalClient: SignalClient, didError error: Error) {
-        print("didError: \(error)")
+        debugPrint("didError: \(error)")
     }
 }

@@ -29,7 +29,7 @@ struct MatchRequestModalView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 4)
 
-                Text("Someone has started a match!")
+                Text("\(match.from.username) has started a match!")
                     .font(.title3)
                     .foregroundColor(.white)
 
@@ -37,7 +37,7 @@ struct MatchRequestModalView: View {
                     Button(action: {
                         dismissModal()
                     }) {
-                        Text("Decline")
+                        Text("Decline ")
                             .font(.bangers(size: 20))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -49,7 +49,7 @@ struct MatchRequestModalView: View {
                         onConfirm()
                         dismissModal()
                     }) {
-                        Text("Accept")
+                        Text("Accept ")
                             .font(.bangers(size: 20))
                             .frame(maxWidth: .infinity)
                             .foregroundColor(.white)
