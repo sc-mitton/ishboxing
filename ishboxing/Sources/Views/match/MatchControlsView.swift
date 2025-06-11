@@ -18,23 +18,20 @@ struct MatchControlsView: View {
                         self.viewModel.endMatch()
                         print("Dismissing view")
                         dismiss()
-
                     }
                 }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 32))
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18))
                         .foregroundColor(.white)
+                        .padding(8)
                         .background(
                             Circle()
-                                .fill(Color.black.opacity(0.5))
+                                .fill(Color.ishRed.opacity(0.5))
                                 .frame(width: 44, height: 44)
                         )
                 }
-
                 .padding(.leading, 20)
                 .padding(.top, 20)
-
-                Spacer()
 
                 // Mute button
                 Button(action: {
@@ -45,16 +42,19 @@ struct MatchControlsView: View {
                     }
                 }) {
                     Image(systemName: self.viewModel.isMuted ? "mic.slash.fill" : "mic.fill")
-                        .font(.system(size: 32))
+                        .font(.system(size: 18))
                         .foregroundColor(.white)
+                        .padding(8)
                         .background(
                             Circle()
-                                .fill(Color.black.opacity(0.5))
+                                .fill(Color.ishRed.opacity(0.5))
                                 .frame(width: 44, height: 44)
                         )
                 }
-                .padding(.trailing, 20)
+                .padding(.leading, 20)
                 .padding(.top, 20)
+
+                Spacer()
             }
 
             Spacer()

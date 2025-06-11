@@ -37,48 +37,33 @@ struct MatchView: View {
             // Background color
             Color.black.edgesIgnoringSafeArea(.all)
 
-            VStack(spacing: 20) {
-                // Remote video view (larger)
-                if let remoteVideoView = remoteVideoView {
-                    VideoView(videoView: remoteVideoView)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .aspectRatio(9 / 16, contentMode: .fit)
-                        .cornerRadius(12)
-                        .padding()
-                } else {
-                    // Placeholder while waiting for remote video
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .aspectRatio(9 / 16, contentMode: .fit)
-                        .cornerRadius(12)
-                        .padding()
-                }
-
-                // Local video view (smaller, overlay)
-                if let localVideoView = localVideoView {
-                    VideoView(videoView: localVideoView)
-                        .frame(width: 120, height: 160)
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                        .padding()
-                }
-
-                // Connection status
-                if let state = viewModel.webRTCConnectionState {
-                    Text("Connection: \(state.rawValue)")
-                        .foregroundColor(.white)
-                        .padding()
-                }
+            // Remote video view (full screen)
+            if let remoteVideoView = remoteVideoView {
+                VideoView(videoView: remoteVideoView)
+                    .edgesIgnoringSafeArea(.all)
+            } else {
+                // Placeholder while waiting for remote video
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .edgesIgnoringSafeArea(.all)
             }
-            .padding()
-            .navigationBarTitleDisplayMode(.inline)
+
+            // Local video view (smaller, top right corner)
+            if let localVideoView = localVideoView {
+                VideoView(videoView: localVideoView)
+                    .frame(width: 120, height: 160)
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.white, lineWidth: 2)
+                    )
+                    .padding()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
 
             // Overlay controls
             MatchControlsView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .onAppear {
             setupVideoViews()
