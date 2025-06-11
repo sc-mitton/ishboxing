@@ -52,10 +52,10 @@ struct MatchView: View {
             if let localVideoView = localVideoView {
                 VideoView(videoView: localVideoView)
                     .frame(width: 120, height: 160)
-                    .cornerRadius(8)
+                    .cornerRadius(24)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.white, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.ishBlue, lineWidth: 4)
                     )
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
