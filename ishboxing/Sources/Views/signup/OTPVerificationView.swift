@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct OTPVerificationView: View {
-    @StateObject private var supabaseService = SupabaseService()
+    @StateObject private var supabaseService = SupabaseService.shared
     @State private var otp = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
@@ -86,7 +86,6 @@ struct OTPVerificationView: View {
                 if hasProfile {
                     supabaseService.isAuthenticated = true
                     router.path.removeLast(router.path.count)
-                    router.path.append("home")
                 } else {
                     router.path.append("username")
                 }

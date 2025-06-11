@@ -76,7 +76,7 @@ private struct FriendsListContent: View {
                 }
             }
         } else if let error = friendManagement.errorMessage {
-            VStack {
+            ScrollView {
                 Spacer()
                 Text(error)
                     .foregroundColor(.red)
@@ -86,6 +86,11 @@ private struct FriendsListContent: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemGray6))
+            .refreshable {
+                Task {
+                    await friendManagement.fetchFriends()
+                }
+            }
         } else {
             List {
                 if friendManagement.unifiedFriends.isEmpty {

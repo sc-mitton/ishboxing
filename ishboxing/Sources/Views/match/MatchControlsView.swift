@@ -18,7 +18,7 @@ struct MatchControlsView: View {
                         self.viewModel.endMatch()
                         print("Dismissing view")
                         dismiss()
-                        
+
                     }
                 }) {
                     Image(systemName: "xmark.circle.fill")
@@ -30,7 +30,7 @@ struct MatchControlsView: View {
                                 .frame(width: 44, height: 44)
                         )
                 }
-                
+
                 .padding(.leading, 20)
                 .padding(.top, 20)
 
