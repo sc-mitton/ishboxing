@@ -29,6 +29,7 @@ final class SignalClient {
 
     private var hasExchangedSDP: Bool = false  // Track SDP exchange status
     private var pendingIceCandidates: [IceCandidate] = []  // Queue for ICE candidates that arrive before SDP exchange
+    private var pendingOutgoingIceCandidates: [RTCIceCandidate] = []  // Queue for outgoing ICE candidates
 
     weak var delegate: SignalClientDelegate?
 
@@ -120,6 +121,7 @@ final class SignalClient {
         channel = nil
         hasExchangedSDP = false
         pendingIceCandidates.removeAll()
+        pendingOutgoingIceCandidates.removeAll()
         webRTCClient.close()
     }
 
@@ -230,6 +232,22 @@ final class SignalClient {
                 }
             }
             pendingIceCandidates.removeAll()
+
+            // Send any pending outgoing ICE candidates
+            debugPrint(
+                "Sending \(pendingOutgoingIceCandidates.count) pending outgoing ICE candidates")
+            for candidate in pendingOutgoingIceCandidates {
+                do {
+                    try await self.broadcastMessage(
+                        Message.candidate(IceCandidate(from: candidate))
+                    )
+                    debugPrint("Successfully sent queued outgoing ICE candidate")
+                } catch {
+                    debugPrint("Error sending queued outgoing ICE candidate: \(error)")
+                    self.delegate?.signalClient(self, didError: error)
+                }
+            }
+            pendingOutgoingIceCandidates.removeAll()
         }
     }
 
@@ -248,7 +266,8 @@ extension SignalClient: WebRTCClientDelegate {
                         Message.candidate(IceCandidate(from: candidate))
                     )
                 } else {
-                    debugPrint("Holding ICE candidate until SDP exchange is complete")
+                    debugPrint("Queueing outgoing ICE candidate until SDP exchange is complete")
+                    pendingOutgoingIceCandidates.append(candidate)
                 }
             } catch {
                 delegate?.signalClient(self, didError: error)
