@@ -86,6 +86,7 @@ struct OTPVerificationView: View {
                 if hasProfile {
                     supabaseService.isAuthenticated = true
                     router.path.removeLast(router.path.count)
+                    router.path.append("home")
                 } else {
                     router.path.append("username")
                 }

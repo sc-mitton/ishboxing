@@ -73,33 +73,34 @@ struct HomeView: View {
                         if !$0 {
                             showMatchView = false
                             selectedFriend = nil
-                        }
-                    }
-                )
-            ) {
-                if let friend = selectedFriend {
-                    MatchView(friend: friend, match: notificationMatch) {
-                        showMatchView = false
-                        selectedFriend = nil
-                        notificationMatch = nil
-                    }
-                }
-            }
-            .fullScreenCover(
-                isPresented: Binding(
-                    get: { showMatchRequestModal && notificationMatch != nil },
-                    set: {
-                        if !$0 {
-                            showMatchRequestModal = false
                             notificationMatch = nil
                         }
                     }
                 )
             ) {
-                if let match = notificationMatch {
-                    MatchRequestModalView(match: match) {
-                        showMatchView = true
+                MatchView(friend: selectedFriend!, match: notificationMatch) {
+                    showMatchView = false
+                    selectedFriend = nil
+                    notificationMatch = nil
+                }
+            }
+            .fullScreenCover(
+                isPresented: Binding(
+                    get: { showMatchRequestModal },
+                    set: {
+                        if !$0 {
+                            showMatchRequestModal = false
+                        }
                     }
+                )
+            ) {
+                MatchRequestModalView(match: notificationMatch!) {
+                    showMatchView = true
+                    showMatchRequestModal = false
+                }
+                .presentationBackground(.clear)
+                .transaction { transaction in
+                    transaction.disablesAnimations = true
                 }
             }
             .task {
@@ -149,6 +150,9 @@ struct HomeView: View {
     }
 
     private func setupNotificationObserver() {
+        // Remove any existing observer first
+        NotificationCenter.default.removeObserver(self)
+
         NotificationCenter.default.addObserver(
             forName: NSNotification.Name("MatchNotificationReceived"),
             object: nil,

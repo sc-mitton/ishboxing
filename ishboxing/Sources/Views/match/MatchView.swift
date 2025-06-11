@@ -45,6 +45,14 @@ struct MatchView: View {
                         .aspectRatio(9 / 16, contentMode: .fit)
                         .cornerRadius(12)
                         .padding()
+                } else {
+                    // Placeholder while waiting for remote video
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .aspectRatio(9 / 16, contentMode: .fit)
+                        .cornerRadius(12)
+                        .padding()
                 }
 
                 // Local video view (smaller, overlay)
@@ -75,19 +83,27 @@ struct MatchView: View {
         .onAppear {
             setupVideoViews()
         }
+        .onChange(of: viewModel.webRTCConnectionState) { oldState, newState in
+            if newState == .connected {
+                // Re-render remote video when connection is established
+                if let remoteView = remoteVideoView {
+                    webRTCClient.renderRemoteVideo(to: remoteView)
+                }
+            }
+        }
     }
 
     private func setupVideoViews() {
         // Setup local video view
         let localView = RTCMTLVideoView()
+        localView.videoContentMode = .scaleAspectFill
         localVideoView = localView
-        debugPrint("Setting up local video view")
         webRTCClient.startCaptureLocalVideo(renderer: localView)
 
         // Setup remote video view
         let remoteView = RTCMTLVideoView()
+        remoteView.videoContentMode = .scaleAspectFill
         remoteVideoView = remoteView
-        debugPrint("Setting up remote video view")
         webRTCClient.renderRemoteVideo(to: remoteView)
     }
 }

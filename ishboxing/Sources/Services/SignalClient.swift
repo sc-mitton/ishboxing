@@ -28,6 +28,7 @@ final class SignalClient {
     var workItem: DispatchWorkItem?
 
     private var hasExchangedSDP: Bool = false  // Track SDP exchange status
+    private var pendingIceCandidates: [IceCandidate] = []  // Queue for ICE candidates that arrive before SDP exchange
 
     weak var delegate: SignalClientDelegate?
 
@@ -118,6 +119,7 @@ final class SignalClient {
         channelId = ""
         channel = nil
         hasExchangedSDP = false
+        pendingIceCandidates.removeAll()
         webRTCClient.close()
     }
 
@@ -147,11 +149,12 @@ final class SignalClient {
         debugPrint("handleBroadcastMessage: \(String(describing: message).prefix(20))...")
         switch message {
         case .joined(_):
+            debugPrint("Received joined message, creating offer")
             webRTCClient.offer { [weak self] sdp in
                 guard let self = self else { return }
                 Task {
                     do {
-                        debugPrint("user joined match, sending offer: \(sdp)")
+                        debugPrint("Sending offer SDP")
                         try await self.broadcastMessage(
                             Message.sdp(SessionDescription(from: sdp))
                         )
@@ -161,35 +164,72 @@ final class SignalClient {
                 }
             }
         case .candidate(let iceCandidate):
-            debugPrint("setting remote candidate")
-            webRTCClient.set(remoteCandidate: iceCandidate.rtcIceCandidate) { [weak self] error in
-                guard let self = self else { return }
-                if let error = error {
-                    self.delegate?.signalClient(self, didError: error)
+            debugPrint("Received ICE candidate: \(iceCandidate.sdp)")
+            if hasExchangedSDP {
+                debugPrint("Setting remote candidate after SDP exchange")
+                webRTCClient.set(remoteCandidate: iceCandidate.rtcIceCandidate) {
+                    [weak self] error in
+                    guard let self = self else { return }
+                    if let error = error {
+                        debugPrint("Error setting remote candidate: \(error)")
+                        self.delegate?.signalClient(self, didError: error)
+                    } else {
+                        debugPrint("Successfully set remote candidate")
+                    }
                 }
+            } else {
+                debugPrint("Received ICE candidate before SDP exchange, queuing...")
+                pendingIceCandidates.append(iceCandidate)
             }
         case .sdp(let sdp):
-            debugPrint("setting remote sdp")
+            debugPrint("Received SDP of type: \(sdp.type)")
+            debugPrint("Setting remote SDP")
             webRTCClient.set(remoteSdp: sdp.rtcSessionDescription) { [weak self] error in
                 guard let self = self else { return }
                 if let error = error {
+                    debugPrint("Error setting remote SDP: \(error)")
                     self.delegate?.signalClient(self, didError: error)
+                } else {
+                    debugPrint("Successfully set remote SDP")
                 }
             }
-            webRTCClient.answer { [weak self] sdp in
-                guard let self = self else { return }
-                Task {
-                    do {
-                        try await self.broadcastMessage(
-                            Message.sdp(SessionDescription(from: sdp))
-                        )
-                    } catch {
-                        self.delegate?.signalClient(self, didError: error)
+
+            if sdp.type == .offer {
+                debugPrint("Creating answer SDP")
+                webRTCClient.answer { [weak self] sdp in
+                    guard let self = self else { return }
+                    Task {
+                        do {
+                            debugPrint("Sending answer SDP")
+                            try await self.broadcastMessage(
+                                Message.sdp(SessionDescription(from: sdp))
+                            )
+                        } catch {
+                            self.delegate?.signalClient(self, didError: error)
+                        }
                     }
                 }
             }
+
             self.hasExchangedSDP = true
-            debugPrint("hasExchangedSDP: \(self.hasExchangedSDP)")
+            debugPrint(
+                "SDP exchange completed, processing \(pendingIceCandidates.count) pending ICE candidates"
+            )
+
+            // Process any pending ICE candidates
+            for candidate in pendingIceCandidates {
+                debugPrint("Processing queued ICE candidate: \(candidate.sdp)")
+                webRTCClient.set(remoteCandidate: candidate.rtcIceCandidate) { [weak self] error in
+                    guard let self = self else { return }
+                    if let error = error {
+                        debugPrint("Error processing queued ICE candidate: \(error)")
+                        self.delegate?.signalClient(self, didError: error)
+                    } else {
+                        debugPrint("Successfully processed queued ICE candidate")
+                    }
+                }
+            }
+            pendingIceCandidates.removeAll()
         }
     }
 
