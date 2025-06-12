@@ -9,6 +9,8 @@ protocol SignalClientDelegate: AnyObject {
         _ signalClient: SignalClient, didError error: Error)
     func signalClient(
         _ signalClient: SignalClient, didStateChange state: RTCIceConnectionState)
+    func signalClient(
+        _ signalClient: SignalClient, didCreateMatch match: Match)
 }
 
 struct Response: Decodable {
@@ -25,11 +27,9 @@ final class SignalClient {
     private var channelId: String = ""
     private var channel: RealtimeChannelV2!
     private var subscription: RealtimeSubscription!
+    private var queuedLocalCandidates: [RTCIceCandidate] = []
+    private var queuedRemoteCandidates: [RTCIceCandidate] = []
     var workItem: DispatchWorkItem?
-
-    private var hasExchangedSDP: Bool = false  // Track SDP exchange status
-    private var pendingIceCandidates: [IceCandidate] = []  // Queue for ICE candidates that arrive before SDP exchange
-    private var pendingOutgoingIceCandidates: [RTCIceCandidate] = []  // Queue for outgoing ICE candidates
 
     weak var delegate: SignalClientDelegate?
 
@@ -41,7 +41,7 @@ final class SignalClient {
         }
         self.userId = userId
         self.webRTCClient = webRTCClient
-        self.webRTCClient.delegate = self
+        self.webRTCClient.signalingDelegate = self
     }
 
     deinit {
@@ -64,7 +64,7 @@ final class SignalClient {
         }
     }
 
-    func startMatch(with userId: String) async {
+    func startMatch(with userId: String) async -> Match {
         self.channelId = UUID().uuidString
         let match = Match(
             from: User(id: UUID(uuidString: self.userId)!, username: ""),
@@ -75,6 +75,7 @@ final class SignalClient {
         await self.addChallengedUserToMatch(match: match)
         await self.openMatchSocketChannel(match.id)
         startConnectionTimeoutTimer()
+        return match
     }
 
     func createMatch(match: Match) async {
@@ -113,15 +114,17 @@ final class SignalClient {
         delegate?.signalClient(self, didTimeout: true)
     }
 
+    private func dismissConnectionTimeoutTimer() {
+        workItem?.cancel()
+        workItem = nil
+    }
+
     func cleanUp() async {
         debugPrint("Cleaning up SignalClient")
         workItem?.cancel()
         workItem = nil
         channelId = ""
         channel = nil
-        hasExchangedSDP = false
-        pendingIceCandidates.removeAll()
-        pendingOutgoingIceCandidates.removeAll()
         webRTCClient.close()
     }
 
@@ -152,6 +155,9 @@ final class SignalClient {
         switch message {
         case .joined(_):
             debugPrint("Received joined message, creating offer")
+
+            dismissConnectionTimeoutTimer()
+
             webRTCClient.offer { [weak self] sdp in
                 guard let self = self else { return }
                 Task {
@@ -167,8 +173,10 @@ final class SignalClient {
             }
         case .candidate(let iceCandidate):
             debugPrint("Received ICE candidate: \(iceCandidate.sdp)")
-            if hasExchangedSDP {
-                debugPrint("Setting remote candidate after SDP exchange")
+            if !webRTCClient.hasExchangedSDP {
+                debugPrint("Queuing remote candidate")
+                queuedRemoteCandidates.append(iceCandidate.rtcIceCandidate)
+            } else {
                 webRTCClient.set(remoteCandidate: iceCandidate.rtcIceCandidate) {
                     [weak self] error in
                     guard let self = self else { return }
@@ -179,9 +187,6 @@ final class SignalClient {
                         debugPrint("Successfully set remote candidate")
                     }
                 }
-            } else {
-                debugPrint("Received ICE candidate before SDP exchange, queuing...")
-                pendingIceCandidates.append(iceCandidate)
             }
         case .sdp(let sdp):
             debugPrint("Received SDP of type: \(sdp.type)")
@@ -191,8 +196,6 @@ final class SignalClient {
                 if let error = error {
                     debugPrint("Error setting remote SDP: \(error)")
                     self.delegate?.signalClient(self, didError: error)
-                } else {
-                    debugPrint("Successfully set remote SDP")
                 }
             }
 
@@ -212,43 +215,30 @@ final class SignalClient {
                     }
                 }
             }
+        }
+    }
 
-            self.hasExchangedSDP = true
-            debugPrint(
-                "SDP exchange completed, processing \(pendingIceCandidates.count) pending ICE candidates"
-            )
-
-            // Process any pending ICE candidates
-            for candidate in pendingIceCandidates {
-                debugPrint("Processing queued ICE candidate: \(candidate.sdp)")
-                webRTCClient.set(remoteCandidate: candidate.rtcIceCandidate) { [weak self] error in
-                    guard let self = self else { return }
-                    if let error = error {
-                        debugPrint("Error processing queued ICE candidate: \(error)")
-                        self.delegate?.signalClient(self, didError: error)
-                    } else {
-                        debugPrint("Successfully processed queued ICE candidate")
-                    }
-                }
+    func flushQueuedCandidates() {
+        debugPrint("flushing queued local candidates of count: \(queuedLocalCandidates.count)")
+        for candidate in queuedLocalCandidates {
+            Task {
+                try? await self.broadcastMessage(Message.candidate(IceCandidate(from: candidate)))
             }
-            pendingIceCandidates.removeAll()
+        }
+        queuedLocalCandidates.removeAll()
+    }
 
-            // Send any pending outgoing ICE candidates
-            debugPrint(
-                "Sending \(pendingOutgoingIceCandidates.count) pending outgoing ICE candidates")
-            for candidate in pendingOutgoingIceCandidates {
-                do {
-                    try await self.broadcastMessage(
-                        Message.candidate(IceCandidate(from: candidate))
-                    )
-                    debugPrint("Successfully sent queued outgoing ICE candidate")
-                } catch {
-                    debugPrint("Error sending queued outgoing ICE candidate: \(error)")
+    func flushQueuedRemoteCandidates() {
+        debugPrint("flushing queued remote candidates of count: \(queuedRemoteCandidates.count)")
+        for candidate in queuedRemoteCandidates {
+            webRTCClient.set(remoteCandidate: candidate) { [weak self] error in
+                guard let self = self else { return }
+                if let error = error {
                     self.delegate?.signalClient(self, didError: error)
                 }
             }
-            pendingOutgoingIceCandidates.removeAll()
         }
+        queuedRemoteCandidates.removeAll()
     }
 
     func broadcastMessage(_ message: Message) async throws {
@@ -256,37 +246,21 @@ final class SignalClient {
     }
 }
 
-extension SignalClient: WebRTCClientDelegate {
-    func webRTCClient(_ client: WebRTCClient, didDiscoverLocalCandidate candidate: RTCIceCandidate)
-    {
-        Task {
-            do {
-                if hasExchangedSDP {
-                    try await self.broadcastMessage(
-                        Message.candidate(IceCandidate(from: candidate))
-                    )
-                } else {
-                    debugPrint("Queueing outgoing ICE candidate until SDP exchange is complete")
-                    pendingOutgoingIceCandidates.append(candidate)
-                }
-            } catch {
-                delegate?.signalClient(self, didError: error)
+extension SignalClient: WebRTCClientSignalingDelegate {
+    func webRTCClient(_ client: WebRTCClient, didGenerate candidate: RTCIceCandidate) {
+        debugPrint("didGenerate candidate, queuedLocalCandidates: \(queuedLocalCandidates.count)")
+        if !webRTCClient.hasExchangedSDP {
+            queuedLocalCandidates.append(candidate)
+        } else {
+            Task {
+                try? await self.broadcastMessage(Message.candidate(IceCandidate(from: candidate)))
             }
         }
     }
 
-    func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
-    {
-        delegate?.signalClient(self, didStateChange: state)
-
-        if state == .connected {
-            debugPrint("Connection established, canceling timeout timer")
-            workItem?.cancel()
-        }
-    }
-
-    func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data) {
-        debugPrint("Received data: \(data)")
+    func webRTCClient(_ client: WebRTCClient, didChangeSignalingState state: RTCSignalingState) {
+        self.flushQueuedCandidates()
+        self.flushQueuedRemoteCandidates()
     }
 }
 

@@ -2,9 +2,13 @@ import Foundation
 import WebRTC
 
 protocol WebRTCClientDelegate: AnyObject {
-    func webRTCClient(_ client: WebRTCClient, didDiscoverLocalCandidate candidate: RTCIceCandidate)
     func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
     func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data)
+}
+
+protocol WebRTCClientSignalingDelegate: AnyObject {
+    func webRTCClient(_ client: WebRTCClient, didGenerate candidate: RTCIceCandidate)
+    func webRTCClient(_ client: WebRTCClient, didChangeSignalingState state: RTCSignalingState)
 }
 
 final class WebRTCClient: NSObject {
@@ -20,6 +24,7 @@ final class WebRTCClient: NSObject {
     }()
 
     weak var delegate: WebRTCClientDelegate?
+    weak var signalingDelegate: WebRTCClientSignalingDelegate?
     private let peerConnection: RTCPeerConnection
     private let rtcAudioSession = RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "audio")
@@ -33,6 +38,9 @@ final class WebRTCClient: NSObject {
     private var localDataChannel: RTCDataChannel?
     private var remoteDataChannel: RTCDataChannel?
     private var localVideoRenderer: RTCVideoRenderer?
+    private var remoteVideoRenderer: RTCVideoRenderer?
+
+    public var hasExchangedSDP: Bool = false
 
     @available(*, unavailable)
     override init() {
@@ -69,6 +77,7 @@ final class WebRTCClient: NSObject {
 
         super.init()
         self.createMediaSenders()
+        self.createDataChannel()
         self.configureAudioSession()
         self.peerConnection.delegate = self
     }
@@ -167,6 +176,7 @@ final class WebRTCClient: NSObject {
 
     func renderRemoteVideo(to renderer: RTCVideoRenderer) {
         debugPrint("Attempting to render remote video to renderer")
+        self.remoteVideoRenderer = renderer
         if let track = self.remoteVideoTrack {
             debugPrint("Adding remote video track to renderer")
             track.add(renderer)
@@ -191,13 +201,13 @@ final class WebRTCClient: NSObject {
 
         // Audio
         let audioTrack = self.createAudioTrack()
-        print("adding audio track")
+        debugPrint("adding audio track")
         self.peerConnection.add(audioTrack, streamIds: [streamId])
 
         // Video
         let videoTrack = self.createVideoTrack()
         self.localVideoTrack = videoTrack
-        print("adding video track")
+        debugPrint("adding video track")
         self.peerConnection.add(videoTrack, streamIds: [streamId])
     }
 
@@ -219,20 +229,24 @@ final class WebRTCClient: NSObject {
         #endif
 
         let videoTrack = WebRTCClient.factory.videoTrack(with: videoSource, trackId: "video0")
+        debugPrint("Created local video track: \(videoTrack)")
+        debugPrint("Local video track enabled: \(videoTrack.isEnabled)")
+        debugPrint("Local video track readyState: \(videoTrack.readyState)")
         return videoTrack
     }
 
     // MARK: Data Channels
-    private func createDataChannel() -> RTCDataChannel? {
+    func createDataChannel() {
         let config = RTCDataChannelConfiguration()
         guard
             let dataChannel = self.peerConnection.dataChannel(
                 forLabel: "WebRTCData", configuration: config)
         else {
             debugPrint("Warning: Couldn't create data channel.")
-            return nil
+            return
         }
-        return dataChannel
+        dataChannel.delegate = self
+        self.remoteDataChannel = dataChannel
     }
 
     func sendData(_ data: Data) {
@@ -243,12 +257,20 @@ final class WebRTCClient: NSObject {
     func close() {
         debugPrint("Closing WebRTC connection")
         self.peerConnection.close()
-        if let renderer = self.localVideoRenderer {
-            self.localVideoTrack?.remove(renderer)
+
+        // Safely remove local video track from renderer
+        if let renderer = self.localVideoRenderer,
+            let videoTrack = self.localVideoTrack
+        {
+            videoTrack.remove(renderer)
         }
+
+        // Safely stop camera capture
         if let capturer = self.videoCapturer as? RTCCameraVideoCapturer {
             capturer.stopCapture()
         }
+
+        // Clear all references
         self.localVideoTrack = nil
         self.localVideoRenderer = nil
         self.remoteVideoTrack = nil
@@ -264,6 +286,10 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
         _ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState
     ) {
         debugPrint("peerConnection new signaling state: \(stateChanged)")
+        if stateChanged == .stable {
+            self.hasExchangedSDP = true
+            self.signalingDelegate?.webRTCClient(self, didChangeSignalingState: stateChanged)
+        }
     }
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
@@ -274,6 +300,14 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
             self.remoteVideoTrack = videoTrack
             debugPrint("Remote video track received and set: \(videoTrack)")
             debugPrint("Remote video track enabled: \(videoTrack.isEnabled)")
+            debugPrint("Remote video track readyState: \(videoTrack.readyState)")
+
+            // Add the track to the renderer if we have one
+            if let renderer = self.remoteVideoRenderer {
+                debugPrint("Adding remote video track to existing renderer")
+                videoTrack.add(renderer)
+                debugPrint("Remote track added to existing renderer")
+            }
         } else {
             debugPrint("No video track found in received stream")
         }
@@ -306,7 +340,8 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate)
     {
-        self.delegate?.webRTCClient(self, didDiscoverLocalCandidate: candidate)
+        debugPrint("peerConnection did generate candidate: \(candidate)")
+        self.signalingDelegate?.webRTCClient(self, didGenerate: candidate)
     }
 
     func peerConnection(
@@ -326,6 +361,16 @@ extension WebRTCClient {
         peerConnection.transceivers
             .compactMap { return $0.sender.track as? T }
             .forEach { $0.isEnabled = isEnabled }
+    }
+}
+
+extension WebRTCClient: RTCDataChannelDelegate {
+    func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
+        debugPrint("dataChannel did change state: \(dataChannel.readyState)")
+    }
+
+    func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
+        self.delegate?.webRTCClient(self, didReceiveData: buffer.data)
     }
 }
 
@@ -378,15 +423,5 @@ extension WebRTCClient {
 
     private func setAudioEnabled(_ isEnabled: Bool) {
         setTrackEnabled(RTCAudioTrack.self, isEnabled: isEnabled)
-    }
-}
-
-extension WebRTCClient: RTCDataChannelDelegate {
-    func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
-        debugPrint("dataChannel did change state: \(dataChannel.readyState)")
-    }
-
-    func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
-        self.delegate?.webRTCClient(self, didReceiveData: buffer.data)
     }
 }

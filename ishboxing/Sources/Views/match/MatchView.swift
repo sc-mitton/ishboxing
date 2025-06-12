@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Supabase
 import SwiftUI
@@ -6,26 +7,32 @@ import WebRTC
 struct MatchView: View {
     @Environment(\.dismiss) var dismiss
     let friend: User
-    let match: Match?
     let supabaseService = SupabaseService.shared
     let webRTCClient: WebRTCClient
 
     @StateObject private var viewModel: MatchViewModel
+    @ObservedObject private var gameEngine: GameEngine
     @State private var localVideoView: RTCMTLVideoView?
     @State private var remoteVideoView: RTCMTLVideoView?
+    @State private var hasRemoteVideoTrack = false
+    @State private var match: Match?
 
     init(friend: User, match: Match?, onDismiss: @escaping () -> Void) {
-        self.match = match
         self.friend = friend
+        self._match = State(initialValue: match)
 
         let webRTCClient = WebRTCClient(iceServers: WebRTCConfig.default.iceServers)
         self.webRTCClient = webRTCClient
         let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
 
+        let gameEngine = GameEngine(webRTCClient: webRTCClient)
+        self._gameEngine = ObservedObject(wrappedValue: gameEngine)
+
         self._viewModel = StateObject(
             wrappedValue: MatchViewModel(
                 signalClient: signalClient,
                 webRTCClient: webRTCClient,
+                gameEngine: gameEngine,
                 friend: friend,
                 match: match,
                 onDismiss: onDismiss
@@ -41,6 +48,11 @@ struct MatchView: View {
             if let remoteVideoView = remoteVideoView {
                 VideoView(videoView: remoteVideoView)
                     .edgesIgnoringSafeArea(.all)
+                    .blur(radius: viewModel.webRTCConnectionState == .disconnected ? 10 : 0)
+                    .onAppear {
+                        debugPrint("Remote video view appeared")
+                        webRTCClient.renderRemoteVideo(to: remoteVideoView)
+                    }
             } else {
                 // Placeholder while waiting for remote video
                 Rectangle()
@@ -59,11 +71,48 @@ struct MatchView: View {
                     )
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .onAppear {
+                        debugPrint("Local video view appeared")
+                    }
+            }
+
+            // Disconnected overlay
+            if viewModel.webRTCConnectionState == .disconnected {
+                VStack(spacing: 20) {
+                    Text("\(friend.username) has left the match")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Text("End Match ")
+                            .font(.bangers(size: 24))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 30)
+                            .padding(.vertical, 12)
+                            .background(Color.ishBlue)
+                            .cornerRadius(25)
+                    }
+                }
+                .padding(30)
+                .background(Color.black.opacity(0.7))
+                .cornerRadius(20)
             }
 
             // Overlay controls
             MatchControlsView(viewModel: viewModel)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            // Countdown overlay
+            if let countdown = gameEngine.countdown {
+                Text("\(countdown) ")
+                    .font(.bangers(size: 120))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.5))
+            }
         }
         .onAppear {
             setupVideoViews()
@@ -74,6 +123,7 @@ struct MatchView: View {
                 if let remoteView = remoteVideoView {
                     webRTCClient.renderRemoteVideo(to: remoteView)
                 }
+                gameEngine.startGame()
             }
         }
     }
@@ -82,14 +132,15 @@ struct MatchView: View {
         // Setup local video view
         let localView = RTCMTLVideoView()
         localView.videoContentMode = .scaleAspectFill
+        localView.backgroundColor = .black
         localVideoView = localView
         webRTCClient.startCaptureLocalVideo(renderer: localView)
 
         // Setup remote video view
         let remoteView = RTCMTLVideoView()
         remoteView.videoContentMode = .scaleAspectFill
+        remoteView.backgroundColor = .black
         remoteVideoView = remoteView
-        webRTCClient.renderRemoteVideo(to: remoteView)
     }
 }
 

@@ -13,10 +13,8 @@ struct MatchControlsView: View {
             HStack {
                 // Close button
                 Button(action: {
-                    print("Closing match")
                     Task {
                         self.viewModel.endMatch()
-                        print("Dismissing view")
                         dismiss()
                     }
                 }) {
@@ -26,7 +24,7 @@ struct MatchControlsView: View {
                         .padding(8)
                         .background(
                             Circle()
-                                .fill(Color.ishRed.opacity(0.5))
+                                .fill(Color.ishRed)
                                 .frame(width: 44, height: 44)
                         )
                 }
@@ -47,7 +45,7 @@ struct MatchControlsView: View {
                         .padding(8)
                         .background(
                             Circle()
-                                .fill(Color.ishRed.opacity(0.5))
+                                .fill(Color.ishRed)
                                 .frame(width: 44, height: 44)
                         )
                 }

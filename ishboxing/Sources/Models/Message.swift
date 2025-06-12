@@ -18,7 +18,6 @@ extension Message: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)
-        print("type: \(type), \(String(describing: RTCSessionDescription.self))")
         switch type {
         case String(describing: RTCSessionDescription.self):
             self = .sdp(try container.decode(SessionDescription.self, forKey: .data))
