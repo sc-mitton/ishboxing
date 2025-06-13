@@ -11,7 +11,7 @@ struct MatchView: View {
     let webRTCClient: WebRTCClient
 
     @StateObject private var viewModel: MatchViewModel
-    @ObservedObject private var gameEngine: GameEngine
+    @StateObject private var gameEngine: GameEngine
     @State private var localVideoView: RTCMTLVideoView?
     @State private var remoteVideoView: RTCMTLVideoView?
     @State private var hasRemoteVideoTrack = false
@@ -26,7 +26,7 @@ struct MatchView: View {
         let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
 
         let gameEngine = GameEngine(webRTCClient: webRTCClient, supabaseService: supabaseService)
-        self._gameEngine = ObservedObject(wrappedValue: gameEngine)
+        self._gameEngine = StateObject(wrappedValue: gameEngine)
 
         self._viewModel = StateObject(
             wrappedValue: MatchViewModel(
@@ -107,7 +107,7 @@ struct MatchView: View {
                                 gameEngine.swipe(point: nil, isLocal: true)
                             }
                     )
-                    .disabled(!gameEngine.onOffense)
+                    .disabled(!gameEngine.readyForOffense)
             }
 
             // Overlay controls
@@ -116,11 +116,16 @@ struct MatchView: View {
 
             // Countdown overlay
             if let countdown = gameEngine.countdown {
-                Text("\(countdown) ")
-                    .font(.bangers(size: 120))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.opacity(0.5))
+                ZStack {
+                    Color.black.opacity(0.5)
+                        .edgesIgnoringSafeArea(.all)
+
+                    Text("\(countdown) ")
+                        .font(.bangers(size: 120))
+                        .foregroundColor(.white)
+                        .scaleEffect(gameEngine.isCountdownActive ? 1.2 : 1.0)
+                        .animation(.easeInOut(duration: 0.2), value: countdown)
+                }
             }
 
             // Disconnected overlay

@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 import WebRTC
 
@@ -11,7 +12,7 @@ enum DragState {
 
 final class GameEngine: ObservableObject {
     @Published public private(set) var gameState: GameState = .idle
-    @Published public private(set) var countdown: Int?
+    @Published public private(set) var countdown: Int? = nil
     @Published public private(set) var localSwipePoints: [CGPoint] = []
     @Published public private(set) var opponentSwipePoints: [CGPoint] = []
     @Published public private(set) var round = [0, 0]
@@ -20,10 +21,21 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var onOffense: Bool = false
     @Published public private(set) var fullScreenMessage: String?
     @Published public private(set) var bottomMessage: String?
+    @Published public private(set) var isCountdownActive: Bool = false
+    @Published public private(set) var isGameOver: Bool = false
+
+    public var oponentIsReady: Bool = false
+    public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
+    public var readyForOffense: Bool {
+        gameState == .inProgress && onOffense && oponentIsReady && oponentScreenRatio != nil
+    }
 
     private var webRTCClient: WebRTCClient
     private var supabaseService: SupabaseService
     private var match: Match?
+
+    private var countdownTimer: AnyCancellable?
+    private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(webRTCClient: WebRTCClient, supabaseService: SupabaseService) {
         self.webRTCClient = webRTCClient
@@ -34,19 +46,16 @@ final class GameEngine: ObservableObject {
     }
 
     public func didInitiateMatch() async -> Bool {
-        debugPrint("in didInitiateMatch")
         guard let match = match else {
             return false
         }
         do {
             let session = try await supabaseService.client.auth.session
             let userId = session.user.id
-            debugPrint("didInitiateMatch: \(userId == match.from.id)")
             return userId == match.from.id
         } catch {
             return false
         }
-
     }
 
     func setMatch(match: Match) {
@@ -94,14 +103,22 @@ final class GameEngine: ObservableObject {
                 // Apply smoothing to the entire path
                 smoothPoints(points: &localSwipePoints, windowSize: 5)
             } else {
+                debugPrint("received swipePoint: \(point)")
                 // Add point to opponent points
-                opponentSwipePoints.append(point)
+                let scaledPoint = CGPoint(
+                    x: point.x * oponentScreenRatio.width,
+                    y: point.y * oponentScreenRatio.height
+                )
+                opponentSwipePoints.append(scaledPoint)
                 if opponentSwipePoints.count > MAX_SWIPE_POINTS {
                     opponentSwipePoints = Array(opponentSwipePoints.suffix(MAX_SWIPE_POINTS))
                 }
                 // Apply smoothing to the entire path
                 smoothPoints(points: &opponentSwipePoints, windowSize: 5)
             }
+        }
+        if isLocal {
+            sendSwipe(point: point)
         }
     }
 
@@ -140,8 +157,42 @@ final class GameEngine: ObservableObject {
         webRTCClient.sendData(encodedPayload)
     }
 
-    private func startGame() {
-        gameState = .starting
+    func sendReady() {
+        let payload = RTCDataPayload(type: "ready", data: Data())
+        let encodedPayload = try! JSONEncoder().encode(payload)
+        webRTCClient.sendData(encodedPayload)
+    }
+
+    func sendScreenSize() {
+        let screenSize = UIScreen.main.bounds
+        let screenSizeDict = ["width": screenSize.width, "height": screenSize.height]
+        let screenSizeData = try! JSONEncoder().encode(screenSizeDict)
+        let payload = RTCDataPayload(type: "screenSize", data: screenSizeData)
+        let encodedPayload = try! JSONEncoder().encode(payload)
+        self.webRTCClient.sendData(encodedPayload)
+    }
+
+    public func start() {
+        sendScreenSize()
+        self.gameState = .starting
         self.countdown = 5
+        self.isCountdownActive = true
+
+        countdownTimer =
+            countdownPublisher
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                if let currentCount = self.countdown {
+                    if currentCount > 1 {
+                        self.countdown = currentCount - 1
+                    } else {
+                        self.countdown = nil
+                        self.isCountdownActive = false
+                        self.gameState = .inProgress
+                        self.sendReady()
+                        self.countdownTimer?.cancel()
+                    }
+                }
+            }
     }
 }

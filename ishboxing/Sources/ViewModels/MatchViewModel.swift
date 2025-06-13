@@ -80,17 +80,16 @@ extension MatchViewModel: SignalClientDelegate {
     }
 
     func signalClient(_ signalClient: SignalClient, didCreateMatch match: Match) {
-        debugPrint("didCreateMatch: \(match)")
         gameEngine.setMatch(match: match)
     }
 }
 
 extension MatchViewModel: WebRTCClientDelegate {
-    func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
+    func webRTCClient(_ client: WebRTCClient, didChangeDataChannelState state: RTCDataChannelState)
     {
-        debugPrint("didChangeConnectionState: \(state)")
-        DispatchQueue.main.async {
-            self.webRTCConnectionState = state
+        debugPrint("didChangeDataChannelState: \(state)")
+        if state == .open {
+            gameEngine.start()
         }
     }
 
@@ -104,6 +103,10 @@ extension MatchViewModel: WebRTCClientDelegate {
                 DispatchQueue.main.async {
                     self.gameEngine.swipe(point: point)
                 }
+            case "ready":
+                DispatchQueue.main.async {
+                    self.gameEngine.oponentIsReady = true
+                }
             case "punchConnected":
                 DispatchQueue.main.async {
                     self.gameEngine.onPunchConnected()
@@ -111,6 +114,19 @@ extension MatchViewModel: WebRTCClientDelegate {
             case "punchDodged":
                 DispatchQueue.main.async {
                     self.gameEngine.onPunchDodged()
+                }
+            case "screenSize":
+                let screenSizeDict = try JSONDecoder().decode(
+                    [String: Double].self, from: payload.data)
+                let screenSize = CGSize(
+                    width: screenSizeDict["width"] ?? 0,
+                    height: screenSizeDict["height"] ?? 0,
+                )
+                DispatchQueue.main.async {
+                    self.gameEngine.oponentScreenRatio = CGSize(
+                        width: UIScreen.main.bounds.width / screenSize.width,
+                        height: UIScreen.main.bounds.height / screenSize.height
+                    )
                 }
             default:
                 break

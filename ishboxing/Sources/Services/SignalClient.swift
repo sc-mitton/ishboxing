@@ -275,7 +275,6 @@ final class SignalClient {
 
 extension SignalClient: WebRTCClientSignalingDelegate {
     func webRTCClient(_ client: WebRTCClient, didGenerate candidate: RTCIceCandidate) {
-        debugPrint("didGenerate candidate, queuedLocalCandidates: \(queuedLocalCandidates.count)")
         if !webRTCClient.hasExchangedSDP {
             queuedLocalCandidates.append(candidate)
         } else {
