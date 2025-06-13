@@ -103,7 +103,8 @@ struct MatchView: View {
                                 gameEngine.swipe(point: value.location, isLocal: true)
                             }
                             .onEnded { value in
-                                gameEngine.swipe(point: value.location, isLocal: true)
+                                gameEngine.swipe(point: value.location, isLocal: true, isEnd: true)
+                                gameEngine.swipe(point: nil, isLocal: true)
                             }
                     )
                     .disabled(!gameEngine.onOffense)

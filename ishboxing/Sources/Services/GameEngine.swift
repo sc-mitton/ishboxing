@@ -1,8 +1,13 @@
 import Foundation
 import WebRTC
 
-let MAX_SWIPE_POINTS = 20
-let POINTS_CLEAR_DELAY: TimeInterval = 2.0
+let MAX_SWIPE_POINTS = 30
+let POINTS_CLEAR_DELAY: TimeInterval = 1.0
+
+enum DragState {
+    case idle
+    case dragging(CGPoint)
+}
 
 final class GameEngine: ObservableObject {
     @Published public private(set) var gameState: GameState = .idle
@@ -19,21 +24,17 @@ final class GameEngine: ObservableObject {
     private var webRTCClient: WebRTCClient
     private var supabaseService: SupabaseService
     private var match: Match?
-    private var countdownTimer: Timer?
-    private var pointsClearTimer: Timer?
 
     init(webRTCClient: WebRTCClient, supabaseService: SupabaseService) {
         self.webRTCClient = webRTCClient
         self.supabaseService = supabaseService
-
-        // Set the person who didn't initiate the match to be on offense first
-        // Can possibly change this to a coin flip later
         Task {
             self.onOffense = await !self.didInitiateMatch()
         }
     }
 
     public func didInitiateMatch() async -> Bool {
+        debugPrint("in didInitiateMatch")
         guard let match = match else {
             return false
         }
@@ -45,10 +46,16 @@ final class GameEngine: ObservableObject {
         } catch {
             return false
         }
+
     }
 
     func setMatch(match: Match) {
         self.match = match
+        // Set the person who didn't initiate the match to be on offense first
+        // Can possibly change this to a coin flip later
+        Task {
+            self.onOffense = await !self.didInitiateMatch()
+        }
     }
 
     func setState(state: GameState) {
@@ -67,60 +74,66 @@ final class GameEngine: ObservableObject {
         roundResults[round[0]][round[1]] = (roundResults[round[0]][round[1]] ?? 0) + 1
     }
 
-    func swipe(point: CGPoint, isLocal: Bool = false) {
-        // Reset the clear timer
-        pointsClearTimer?.invalidate()
-        pointsClearTimer = Timer.scheduledTimer(
-            withTimeInterval: POINTS_CLEAR_DELAY, repeats: false
-        ) { [weak self] _ in
+    func swipe(point: CGPoint?, isLocal: Bool = false, isEnd: Bool = false) {
+        if isEnd || point == nil {
+            // Set timer to clear points
+            DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
+                if isLocal {
+                    self.localSwipePoints.removeAll()
+                } else {
+                    self.opponentSwipePoints.removeAll()
+                }
+            }
+        } else if let point = point {
             if isLocal {
-                self?.localSwipePoints.removeAll()
+                // Add point to local points
+                localSwipePoints.append(point)
+                if localSwipePoints.count > MAX_SWIPE_POINTS {
+                    localSwipePoints = Array(localSwipePoints.suffix(MAX_SWIPE_POINTS))
+                }
+                // Apply smoothing to the entire path
+                smoothPoints(points: &localSwipePoints, windowSize: 5)
             } else {
-                self?.opponentSwipePoints.removeAll()
+                // Add point to opponent points
+                opponentSwipePoints.append(point)
+                if opponentSwipePoints.count > MAX_SWIPE_POINTS {
+                    opponentSwipePoints = Array(opponentSwipePoints.suffix(MAX_SWIPE_POINTS))
+                }
+                // Apply smoothing to the entire path
+                smoothPoints(points: &opponentSwipePoints, windowSize: 5)
             }
-        }
-
-        if isLocal {
-            localSwipePoints.append(point)
-            if localSwipePoints.count > MAX_SWIPE_POINTS {
-                localSwipePoints = Array(localSwipePoints.suffix(MAX_SWIPE_POINTS))
-            }
-            smoothPoints(points: &localSwipePoints, windowSize: 4)
-            sendSwipe(point: localSwipePoints.last!)
-        } else {
-            opponentSwipePoints.append(point)
-            if opponentSwipePoints.count > MAX_SWIPE_POINTS {
-                opponentSwipePoints = Array(opponentSwipePoints.suffix(MAX_SWIPE_POINTS))
-            }
-            smoothPoints(points: &opponentSwipePoints, windowSize: 4)
-            sendSwipe(point: opponentSwipePoints.last!)
         }
     }
 
     func smoothPoints(points: inout [CGPoint], windowSize: Int) {
         guard points.count > windowSize else { return }
 
-        for i in 0..<(points.count - windowSize) {
-            var sumX: CGFloat = 0
-            var sumY: CGFloat = 0
+        // Create a copy of the points for smoothing
+        var smoothedPoints = points
 
-            // Calculate average of next windowSize points
-            for j in 0..<windowSize {
-                sumX += points[i + j].x
-                sumY += points[i + j].y
-            }
+        // Apply moving average smoothing
+        for i in 0..<points.count {
+            let start = max(0, i - windowSize / 2)
+            let end = min(points.count - 1, i + windowSize / 2)
+            let window = points[start...end]
 
-            // Replace current point with average
-            points[i] = CGPoint(
-                x: sumX / CGFloat(windowSize),
-                y: sumY / CGFloat(windowSize)
+            let sumX = window.reduce(0) { $0 + $1.x }
+            let sumY = window.reduce(0) { $0 + $1.y }
+            let count = Double(window.count)
+
+            smoothedPoints[i] = CGPoint(
+                x: sumX / count,
+                y: sumY / count
             )
         }
+
+        // Update the original points with smoothed values
+        points = smoothedPoints
     }
 
-    func sendSwipe(point: CGPoint) {
+    func sendSwipe(point: CGPoint?) {
         // Create a dictionary with x and y coordinates
-        let pointDict = ["x": point.x, "y": point.y]
+        let pointDict = point != nil ? ["x": point!.x, "y": point!.y] : nil
         let pointData = try! JSONEncoder().encode(pointDict)
         let payload = RTCDataPayload(type: "swipePoint", data: pointData)
         let encodedPayload = try! JSONEncoder().encode(payload)
@@ -130,22 +143,5 @@ final class GameEngine: ObservableObject {
     private func startGame() {
         gameState = .starting
         self.countdown = 5
-
-        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
-            [weak self] timer in
-            guard let self = self else {
-                timer.invalidate()
-                return
-            }
-
-            if self.countdown! > 0 {
-                self.countdown! -= 1
-            } else {
-                timer.invalidate()
-                self.countdownTimer = nil
-                self.countdown = nil
-                self.gameState = .inProgress
-            }
-        }
     }
 }

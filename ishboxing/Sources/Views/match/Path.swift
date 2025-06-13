@@ -24,15 +24,29 @@ struct GlowingPath: View {
     let isLocal: Bool
 
     var body: some View {
-        Path(points: points, isLocal: isLocal)
-            .stroke(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        isLocal ? Color.ishBlue : Color.red,
-                        isLocal ? Color.ishBlue.opacity(0.5) : Color.red.opacity(0.5),
-                    ]),
-                    startPoint: .leading,
-                    endPoint: .trailing
+        Canvas { context, size in
+            guard points.count > 1 else { return }
+
+            var path = SwiftUI.Path()
+            path.move(to: points[0])
+
+            for point in points.dropFirst() {
+                path.addLine(to: point)
+            }
+
+            // Create gradient stops for the stroke
+            let gradient = Gradient(stops: [
+                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(1.0), location: 1),
+                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.0), location: 0),
+            ])
+
+            // Draw the main stroke with gradient
+            context.stroke(
+                path,
+                with: .linearGradient(
+                    gradient,
+                    startPoint: points[0],
+                    endPoint: points.last ?? points[0]
                 ),
                 style: StrokeStyle(
                     lineWidth: 12,
@@ -40,17 +54,31 @@ struct GlowingPath: View {
                     lineJoin: .round
                 )
             )
-            .blur(radius: 3)
-            .overlay(
-                Path(points: points, isLocal: isLocal)
-                    .stroke(
-                        isLocal ? Color.ishBlue : Color.red,
-                        style: StrokeStyle(
-                            lineWidth: 8,
-                            lineCap: .round,
-                            lineJoin: .round
-                        )
+
+            // Draw the glow effect with varying width
+            let glowGradient = Gradient(stops: [
+                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.8), location: 1),
+                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.0), location: 0),
+            ])
+
+            // Draw multiple strokes with decreasing width for the glow effect
+            for i in 0..<3 {
+                let width = 26.0 - Double(i * 4)
+
+                context.stroke(
+                    path,
+                    with: .linearGradient(
+                        glowGradient,
+                        startPoint: points[0],
+                        endPoint: points.last ?? points[0]
+                    ),
+                    style: StrokeStyle(
+                        lineWidth: width,
+                        lineCap: .round,
+                        lineJoin: .round
                     )
-            )
+                )
+            }
+        }
     }
 }

@@ -109,6 +109,7 @@ struct HomeView: View {
             .onAppear {
                 requestPermissionsIfNeeded()
                 registerForPushNotifications()
+                
                 setupNotificationObserver()
             }
             .onDisappear {
