@@ -3,28 +3,45 @@ import SwiftUI
 struct RoundResults: View {
     let roundResults: [[Int?]]
     let currentRound: [Int]
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
-        VStack(spacing: 8) {
-            // First row of 6
-            HStack(spacing: 12) {
-                ForEach(0..<6) { roundIndex in
-                    RoundCircle(
-                        roundIndex: roundIndex,
-                        roundResults: roundResults,
-                        currentRound: currentRound
-                    )
-                }
-            }
+        let isCompact = horizontalSizeClass == .compact
 
-            // Second row of 6
-            HStack(spacing: 12) {
-                ForEach(6..<12) { roundIndex in
-                    RoundCircle(
-                        roundIndex: roundIndex,
-                        roundResults: roundResults,
-                        currentRound: currentRound
-                    )
+        Group {
+            if isCompact {
+                // Two rows for compact screens
+                VStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        ForEach(0..<6) { roundIndex in
+                            RoundCircle(
+                                roundIndex: roundIndex,
+                                roundResults: roundResults,
+                                currentRound: currentRound
+                            )
+                        }
+                    }
+
+                    HStack(spacing: 12) {
+                        ForEach(6..<12) { roundIndex in
+                            RoundCircle(
+                                roundIndex: roundIndex,
+                                roundResults: roundResults,
+                                currentRound: currentRound
+                            )
+                        }
+                    }
+                }
+            } else {
+                // Single row for regular screens
+                HStack(spacing: 12) {
+                    ForEach(0..<12) { roundIndex in
+                        RoundCircle(
+                            roundIndex: roundIndex,
+                            roundResults: roundResults,
+                            currentRound: currentRound
+                        )
+                    }
                 }
             }
         }
