@@ -103,6 +103,7 @@ struct HomeView: View {
                     transaction.disablesAnimations = true
                 }
             }
+            
             .task {
                 await friendManagement.fetchFriends()
             }

@@ -153,6 +153,7 @@ struct MatchView: View {
         localView.videoContentMode = .scaleAspectFill
         localView.backgroundColor = .black
         localVideoView = localView
+        localView.transform = CGAffineTransform(scaleX: -1, y: 1)
         webRTCClient.startCaptureLocalVideo(renderer: localView)
 
         // Setup remote video view
@@ -160,5 +161,6 @@ struct MatchView: View {
         remoteView.videoContentMode = .scaleAspectFill
         remoteView.backgroundColor = .black
         remoteVideoView = remoteView
+        remoteView.transform = CGAffineTransform(scaleX: -1, y: 1)
     }
 }
