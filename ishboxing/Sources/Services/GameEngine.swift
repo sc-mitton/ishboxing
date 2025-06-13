@@ -150,8 +150,13 @@ final class GameEngine: ObservableObject {
 
     func sendSwipe(point: CGPoint?) {
         // Create a dictionary with x and y coordinates
-        let pointDict = point != nil ? ["x": point!.x, "y": point!.y] : nil
-        let pointData = try! JSONEncoder().encode(pointDict)
+        let pointData: Data
+        if let point = point {
+            let pointDict = ["x": point.x, "y": point.y]
+            pointData = try! JSONEncoder().encode(pointDict)
+        } else {
+            pointData = Data()  // Empty data for nil point
+        }
         let payload = RTCDataPayload(type: "swipePoint", data: pointData)
         let encodedPayload = try! JSONEncoder().encode(payload)
         webRTCClient.sendData(encodedPayload)
