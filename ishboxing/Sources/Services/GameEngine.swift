@@ -3,7 +3,8 @@ import Foundation
 import WebRTC
 
 let MAX_SWIPE_POINTS = 40
-let POINTS_CLEAR_DELAY: TimeInterval = 1.0
+let POINTS_CLEAR_DELAY: TimeInterval = 0.5
+let DOT_PRODUCT_THRESHOLD: Double = 0.8
 
 enum DragState {
     case idle
@@ -14,7 +15,7 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var gameState: GameState = .idle
     @Published public private(set) var countdown: Int? = nil
     @Published public private(set) var localSwipePoints: [CGPoint] = []
-    @Published public private(set) var opponentSwipePoints: [CGPoint] = []
+    @Published public private(set) var remoteSwipePoints: [CGPoint] = []
     @Published public private(set) var round = [0, 0]
     @Published public private(set) var roundResults: [[Int?]] = Array(
         repeating: [nil, nil], count: 12)
@@ -24,18 +25,20 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var isCountdownActive: Bool = false
     @Published public private(set) var isGameOver: Bool = false
 
-    public var oponentIsReady: Bool = false
-    public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
-    public var readyForOffense: Bool {
-        gameState == .inProgress && onOffense && oponentIsReady && oponentScreenRatio != nil
-    }
-
+    private var waitingThrowResult: Bool = false
     private var webRTCClient: WebRTCClient
     private var supabaseService: SupabaseService
     private var match: Match?
 
     private var countdownTimer: AnyCancellable?
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    public var oponentIsReady: Bool = false
+    public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
+    public var readyForOffense: Bool {
+        gameState == .inProgress && onOffense && oponentIsReady && oponentScreenRatio != nil
+            && !waitingThrowResult
+    }
 
     init(webRTCClient: WebRTCClient, supabaseService: SupabaseService) {
         self.webRTCClient = webRTCClient
@@ -83,43 +86,53 @@ final class GameEngine: ObservableObject {
         roundResults[round[0]][round[1]] = (roundResults[round[0]][round[1]] ?? 0) + 1
     }
 
-    func swipe(point: CGPoint?, isLocal: Bool = false, isEnd: Bool = false) {
-        if isEnd || point == nil {
-            // Set timer to clear points
+    func localSwipe(point: CGPoint?, isLocal: Bool = false) {
+        if let point = point {
+            localSwipePoints.append(point)
+            if localSwipePoints.count > MAX_SWIPE_POINTS {
+                localSwipePoints = Array(localSwipePoints.suffix(MAX_SWIPE_POINTS))
+            }
+            smoothPoints(points: &localSwipePoints, windowSize: 5)
+        } else {
+            // nil indicates end of throw
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
-                if isLocal {
-                    self.localSwipePoints.removeAll()
-                } else {
-                    self.opponentSwipePoints.removeAll()
-                }
+                self.localSwipePoints.removeAll()
             }
-        } else if let point = point {
-            if isLocal {
-                // Add point to local points
-                localSwipePoints.append(point)
-                if localSwipePoints.count > MAX_SWIPE_POINTS {
-                    localSwipePoints = Array(localSwipePoints.suffix(MAX_SWIPE_POINTS))
-                }
-                // Apply smoothing to the entire path
-                smoothPoints(points: &localSwipePoints, windowSize: 5)
-            } else {
-                debugPrint("received swipePoint: \(point)")
-                // Add point to opponent points
-                let scaledPoint = CGPoint(
-                    x: point.x * oponentScreenRatio.width,
-                    y: point.y * oponentScreenRatio.height
-                )
-                opponentSwipePoints.append(scaledPoint)
-                if opponentSwipePoints.count > MAX_SWIPE_POINTS {
-                    opponentSwipePoints = Array(opponentSwipePoints.suffix(MAX_SWIPE_POINTS))
-                }
-                // Apply smoothing to the entire path
-                smoothPoints(points: &opponentSwipePoints, windowSize: 5)
+            waitingThrowResult = true
+        }
+
+        sendSwipe(point: point)
+    }
+
+    func remoteSwipe(point: CGPoint?) {
+        if let point = point {
+            // Scale the point if needed to account
+            // for different screen sizes of the opponent
+            let scaledPoint = CGPoint(
+                x: point.x * oponentScreenRatio.width,
+                y: point.y * oponentScreenRatio.height
+            )
+            remoteSwipePoints.append(scaledPoint)
+            if remoteSwipePoints.count > MAX_SWIPE_POINTS {
+                remoteSwipePoints = Array(remoteSwipePoints.suffix(MAX_SWIPE_POINTS))
             }
+            smoothPoints(points: &remoteSwipePoints, windowSize: 5)
+        } else {
+            // nil indicates end of throw
+            DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
+                self.remoteSwipePoints.removeAll()
+            }
+            handleThrown()
         }
-        if isLocal {
-            sendSwipe(point: point)
-        }
+    }
+
+    func handleThrown() {
+        // TODO: Implement punch handling
+        // 1. Determine the direction of the throw from the remote points list
+        // 2. Simultaneously, determine the direction of the dodge
+        // (from head movements of the user, determined by keypoint detection model)
+        // 3. Determine if the throw connected or not by the dot product of the throw vector and the dodge vector
+        // if the dot product is between .8 and 1, then the direction is the same and the throw connected
     }
 
     func smoothPoints(points: inout [CGPoint], windowSize: Int) {

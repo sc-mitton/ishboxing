@@ -98,10 +98,9 @@ extension MatchViewModel: WebRTCClientDelegate {
             let payload = try JSONDecoder().decode(RTCDataPayload.self, from: data)
             switch payload.type {
             case "swipePoint":
-                debugPrint("received swipePoint: \(payload.data)")
                 if payload.data.isEmpty {
                     DispatchQueue.main.async {
-                        self.gameEngine.swipe(point: nil, isLocal: false, isEnd: true)
+                        self.gameEngine.remoteSwipe(point: nil)
                     }
                 } else {
                     let pointDict = try JSONDecoder().decode(
@@ -109,7 +108,7 @@ extension MatchViewModel: WebRTCClientDelegate {
                     let point = CGPoint(x: pointDict["x"] ?? 0, y: pointDict["y"] ?? 0)
                     debugPrint("received swipePoint: \(point)")
                     DispatchQueue.main.async {
-                        self.gameEngine.swipe(point: point, isLocal: false)
+                        self.gameEngine.remoteSwipe(point: point)
                     }
                 }
             case "ready":

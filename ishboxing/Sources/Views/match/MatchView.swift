@@ -75,7 +75,7 @@ struct MatchView: View {
             GlowingPath(points: gameEngine.localSwipePoints, isLocal: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
-            GlowingPath(points: gameEngine.opponentSwipePoints, isLocal: false)
+            GlowingPath(points: gameEngine.remoteSwipePoints, isLocal: false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .ignoresSafeArea()
 
@@ -102,11 +102,11 @@ struct MatchView: View {
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
-                                gameEngine.swipe(point: value.location, isLocal: true)
+                                gameEngine.localSwipe(point: value.location, isLocal: true)
                             }
                             .onEnded { value in
-                                gameEngine.swipe(point: value.location, isLocal: true, isEnd: true)
-                                gameEngine.swipe(point: nil, isLocal: true)
+                                gameEngine.localSwipe(point: value.location, isLocal: true)
+                                gameEngine.localSwipe(point: nil, isLocal: true)
                             }
                     )
                     .disabled(!gameEngine.readyForOffense)
