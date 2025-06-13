@@ -15,7 +15,7 @@ struct FriendsListView: View {
             )
         }
         .background(Color(.systemGray6))
-        .cornerRadius(20, corners: [.topLeft, .topRight])
+        .cornerRadius(20)
         .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: -4)
         .frame(maxHeight: .infinity)
         .ignoresSafeArea(edges: .bottom)
@@ -191,24 +191,5 @@ private struct FriendListItem: View {
                 Label("Delete", systemImage: "trash")
             }
         }
-    }
-}
-
-// Add this extension to support rounded corners
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
-
-struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect, byRoundingCorners: corners,
-            cornerRadii: CGSize(width: radius, height: radius))
-        return Path(path.cgPath)
     }
 }

@@ -25,7 +25,7 @@ struct MatchView: View {
         self.webRTCClient = webRTCClient
         let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
 
-        let gameEngine = GameEngine(webRTCClient: webRTCClient)
+        let gameEngine = GameEngine(webRTCClient: webRTCClient, supabaseService: supabaseService)
         self._gameEngine = ObservedObject(wrappedValue: gameEngine)
 
         self._viewModel = StateObject(
@@ -50,7 +50,6 @@ struct MatchView: View {
                     .edgesIgnoringSafeArea(.all)
                     .blur(radius: viewModel.webRTCConnectionState == .disconnected ? 10 : 0)
                     .onAppear {
-                        debugPrint("Remote video view appeared")
                         webRTCClient.renderRemoteVideo(to: remoteVideoView)
                     }
             } else {
@@ -71,9 +70,56 @@ struct MatchView: View {
                     )
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .onAppear {
-                        debugPrint("Local video view appeared")
-                    }
+            }
+            // Swipe Paths
+            GlowingPath(points: gameEngine.localSwipePoints, isLocal: true)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            GlowingPath(points: gameEngine.opponentSwipePoints, isLocal: false)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Full screen message
+            if let fullScreenMessage = gameEngine.fullScreenMessage {
+                Text(fullScreenMessage)
+                    .font(.bangers(size: 120))
+                    .foregroundColor(.white)
+            }
+
+            // Bottom message
+            if let bottomMessage = gameEngine.bottomMessage {
+                Text(bottomMessage)
+                    .font(.bangers(size: 120))
+                    .foregroundColor(.white)
+            }
+
+            // Gesture overlay - this should be on top of everything except the disconnected overlay
+            if viewModel.webRTCConnectionState != .disconnected {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .edgesIgnoringSafeArea(.all)
+                    .contentShape(Rectangle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                gameEngine.swipe(point: value.location, isLocal: true)
+                            }
+                            .onEnded { value in
+                                gameEngine.swipe(point: value.location, isLocal: true)
+                            }
+                    )
+                    .disabled(!gameEngine.onOffense)
+            }
+
+            // Overlay controls
+            MatchControlsView(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            // Countdown overlay
+            if let countdown = gameEngine.countdown {
+                Text("\(countdown) ")
+                    .font(.bangers(size: 120))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.5))
             }
 
             // Disconnected overlay
@@ -101,18 +147,6 @@ struct MatchView: View {
                 .cornerRadius(20)
             }
 
-            // Overlay controls
-            MatchControlsView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-
-            // Countdown overlay
-            if let countdown = gameEngine.countdown {
-                Text("\(countdown) ")
-                    .font(.bangers(size: 120))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.opacity(0.5))
-            }
         }
         .onAppear {
             setupVideoViews()
@@ -123,7 +157,7 @@ struct MatchView: View {
                 if let remoteView = remoteVideoView {
                     webRTCClient.renderRemoteVideo(to: remoteView)
                 }
-                gameEngine.startGame()
+                gameEngine.setState(state: .starting)
             }
         }
     }

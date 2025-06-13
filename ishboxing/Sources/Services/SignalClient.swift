@@ -17,6 +17,32 @@ struct Response: Decodable {
     let status: Int
 }
 
+struct RTCDataPayload: Codable {
+    let type: String
+    let data: Data
+
+    init(type: String, data: Data) {
+        self.type = type
+        self.data = data
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        type = try container.decode(String.self, forKey: .type)
+        data = try container.decode(Data.self, forKey: .data)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(type, forKey: .type)
+        try container.encode(data, forKey: .data)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case type, data
+    }
+}
+
 final class SignalClient {
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
@@ -81,6 +107,7 @@ final class SignalClient {
     func createMatch(match: Match) async {
         do {
             try await self.supabase.client.from("matches").insert(["topic": match.id]).execute()
+            delegate?.signalClient(self, didCreateMatch: match)
         } catch {
             delegate?.signalClient(self, didError: error)
         }

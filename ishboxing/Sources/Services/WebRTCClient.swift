@@ -246,12 +246,15 @@ final class WebRTCClient: NSObject {
             return
         }
         dataChannel.delegate = self
-        self.remoteDataChannel = dataChannel
+        self.localDataChannel = dataChannel
+        debugPrint("Created local data channel")
     }
 
     func sendData(_ data: Data) {
         let buffer = RTCDataBuffer(data: data, isBinary: true)
-        self.remoteDataChannel?.sendData(buffer)
+        if let dataChannel = self.localDataChannel {
+            dataChannel.sendData(buffer)
+        }
     }
 
     func close() {
@@ -351,8 +354,10 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     }
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
-        debugPrint("peerConnection did open data channel")
+        debugPrint("peerConnection did open remote data channel")
         self.remoteDataChannel = dataChannel
+        dataChannel.delegate = self
+        debugPrint("Remote data channel state: \(dataChannel.readyState)")
     }
 }
 
@@ -366,7 +371,9 @@ extension WebRTCClient {
 
 extension WebRTCClient: RTCDataChannelDelegate {
     func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
-        debugPrint("dataChannel did change state: \(dataChannel.readyState)")
+        if dataChannel.readyState == .open {
+            debugPrint("Data channel is now open and ready to send/receive data")
+        }
     }
 
     func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {

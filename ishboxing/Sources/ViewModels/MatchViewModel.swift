@@ -95,6 +95,28 @@ extension MatchViewModel: WebRTCClientDelegate {
     }
 
     func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data) {
-        debugPrint("didReceiveData: \(data)")
+        do {
+            let payload = try JSONDecoder().decode(RTCDataPayload.self, from: data)
+            switch payload.type {
+            case "swipePoint":
+                let pointDict = try JSONDecoder().decode([String: Double].self, from: payload.data)
+                let point = CGPoint(x: pointDict["x"] ?? 0, y: pointDict["y"] ?? 0)
+                DispatchQueue.main.async {
+                    self.gameEngine.swipe(point: point)
+                }
+            case "punchConnected":
+                DispatchQueue.main.async {
+                    self.gameEngine.onPunchConnected()
+                }
+            case "punchDodged":
+                DispatchQueue.main.async {
+                    self.gameEngine.onPunchDodged()
+                }
+            default:
+                break
+            }
+        } catch {
+            debugPrint("Error decoding data: \(error)")
+        }
     }
 }
