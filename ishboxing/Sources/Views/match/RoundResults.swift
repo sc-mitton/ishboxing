@@ -81,22 +81,26 @@ struct RoundCircle: View {
 
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(Color.white, lineWidth: 2)
-                .frame(width: 28, height: 28)
-
             if roundIndex < currentRound[0] {
                 if let result = roundResults[roundIndex][currentRound[1]] {
                     if result > 0 {
                         // Win - show star
-                        Text("⭐️")
-                            .font(.system(size: 16))
-                            .foregroundColor(Color.green.opacity(0.5))
+                        ZStack {
+                            Circle()
+                                .fill(Color.blue.opacity(0.3))
+                                .frame(width: 28, height: 28)
+                            Text("⭐️")
+                                .font(.system(size: 16))
+                        }
                     } else {
                         // Loss - show X
-                        Text("🪦")
-                            .font(.bangers(size: 16))
-                            .foregroundColor(Color.red.opacity(0.5))
+                        ZStack {
+                            Circle()
+                                .fill(Color.red.opacity(0.3))
+                                .frame(width: 28, height: 28)
+                            Text("🪦")
+                                .font(.bangers(size: 16))
+                        }
                     }
                 }
             }
