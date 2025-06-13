@@ -2,7 +2,7 @@ import Combine
 import Foundation
 import WebRTC
 
-let MAX_SWIPE_POINTS = 30
+let MAX_SWIPE_POINTS = 40
 let POINTS_CLEAR_DELAY: TimeInterval = 1.0
 
 enum DragState {

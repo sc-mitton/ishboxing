@@ -74,8 +74,10 @@ struct MatchView: View {
             // Swipe Paths
             GlowingPath(points: gameEngine.localSwipePoints, isLocal: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
             GlowingPath(points: gameEngine.opponentSwipePoints, isLocal: false)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
 
             // Full screen message
             if let fullScreenMessage = gameEngine.fullScreenMessage {
