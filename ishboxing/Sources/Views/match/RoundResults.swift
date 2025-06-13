@@ -81,6 +81,10 @@ struct RoundCircle: View {
 
     var body: some View {
         ZStack {
+            Circle()
+                .stroke(Color.white, lineWidth: 2)
+                .frame(width: 28, height: 28)
+
             if roundIndex < currentRound[0] {
                 if let result = roundResults[roundIndex][currentRound[1]] {
                     if result > 0 {
