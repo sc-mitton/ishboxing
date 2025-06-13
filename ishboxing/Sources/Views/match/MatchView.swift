@@ -71,6 +71,7 @@ struct MatchView: View {
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
+
             // Swipe Paths
             GlowingPath(points: gameEngine.localSwipePoints, isLocal: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -93,23 +94,14 @@ struct MatchView: View {
                     .foregroundColor(.white)
             }
 
-            // Gesture overlay - this should be on top of everything except the disconnected overlay
+            // Gesture overlay
             if viewModel.webRTCConnectionState != .disconnected {
-                Color.clear
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .edgesIgnoringSafeArea(.all)
-                    .contentShape(Rectangle())
-                    .gesture(
-                        DragGesture(minimumDistance: 0)
-                            .onChanged { value in
-                                gameEngine.localSwipe(point: value.location, isLocal: true)
-                            }
-                            .onEnded { value in
-                                gameEngine.localSwipe(point: value.location, isLocal: true)
-                                gameEngine.localSwipe(point: nil, isLocal: true)
-                            }
-                    )
-                    .disabled(!gameEngine.readyForOffense)
+                GestureOverlay(
+                    isEnabled: gameEngine.readyForOffense,
+                    onSwipe: { point in
+                        gameEngine.localSwipe(point: point, isLocal: true)
+                    }
+                )
             }
 
             // Overlay controls
@@ -118,43 +110,28 @@ struct MatchView: View {
 
             // Countdown overlay
             if let countdown = gameEngine.countdown {
-                ZStack {
-                    Color.black.opacity(0.5)
-                        .edgesIgnoringSafeArea(.all)
-
-                    Text("\(countdown) ")
-                        .font(.bangers(size: 120))
-                        .foregroundColor(.white)
-                        .scaleEffect(gameEngine.isCountdownActive ? 1.2 : 1.0)
-                        .animation(.easeInOut(duration: 0.2), value: countdown)
-                }
+                CountdownOverlay(
+                    countdown: countdown,
+                    isActive: gameEngine.isCountdownActive
+                )
             }
 
             // Disconnected overlay
             if viewModel.webRTCConnectionState == .disconnected {
-                VStack(spacing: 20) {
-                    Text("\(friend.username) has left the match")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Text("End Match ")
-                            .font(.bangers(size: 24))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 30)
-                            .padding(.vertical, 12)
-                            .background(Color.ishBlue)
-                            .cornerRadius(25)
-                    }
-                }
-                .padding(30)
-                .background(Color.black.opacity(0.7))
-                .cornerRadius(20)
+                DisconnectedOverlay(
+                    friendUsername: friend.username,
+                    onDismiss: { dismiss() }
+                )
             }
 
+            // Round Results
+            RoundResults(
+                roundResults: gameEngine.roundResults,
+                currentRound: gameEngine.round
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+            .padding(.leading, 20)
+            .padding(.bottom, 20)
         }
         .onAppear {
             setupVideoViews()
@@ -183,18 +160,5 @@ struct MatchView: View {
         remoteView.videoContentMode = .scaleAspectFill
         remoteView.backgroundColor = .black
         remoteVideoView = remoteView
-    }
-}
-
-// Helper view to wrap RTCEAGLVideoView
-struct VideoView: UIViewRepresentable {
-    let videoView: RTCMTLVideoView
-
-    func makeUIView(context: Context) -> RTCMTLVideoView {
-        return videoView
-    }
-
-    func updateUIView(_ uiView: RTCMTLVideoView, context: Context) {
-        // No updates needed
     }
 }
