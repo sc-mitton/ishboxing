@@ -45,10 +45,11 @@ This app is meant to be a demo of the concept and also a way to feature certain 
 1. Different modes for throwing punches, default would be swiping on the screen, other method
 would be closer to the real life game (detecting hand gestures in the camera)
 2. Rock paper scissorrs to start match (traditional way), also would require object / gesture detection in the app
-3. Onboarding instructions for how to play (could be single page)
+3. Download weights from Roboflow (need upgraded plan) to run model localy
+4. Onboarding instructions for how to play (could be single page)
     - Rock paper scissors to see who goes first for each round
     - Point, wave, or gesture in whatever direction
     - Try to "dodge" the punch by looking in any direction other than the one your opponent threw the punch
     - The winner of each round is whoever had the longest streak of dodging their opponent's punches
     - The overall winner is the best of 12 rounds
-4. Implement TURN server for certain network conditions
+5. Implement TURN server for certain network conditions
