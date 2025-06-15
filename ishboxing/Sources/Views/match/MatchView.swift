@@ -9,6 +9,7 @@ struct MatchView: View {
     let friend: User
     let supabaseService = SupabaseService.shared
     let webRTCClient: WebRTCClient
+    let headPoseDetectionRenderer: HeadPoseDetectionRenderer
 
     @StateObject private var viewModel: MatchViewModel
     @StateObject private var gameEngine: GameEngine
@@ -16,7 +17,6 @@ struct MatchView: View {
     @State private var remoteVideoView: RTCMTLVideoView?
     @State private var hasRemoteVideoTrack = false
     @State private var match: Match?
-    @State private var keypointRenderer: KeypointDetectionRenderer?
 
     init(friend: User, match: Match?, onDismiss: @escaping () -> Void) {
         self.friend = friend
@@ -24,10 +24,13 @@ struct MatchView: View {
 
         let webRTCClient = WebRTCClient(iceServers: WebRTCConfig.default.iceServers)
         self.webRTCClient = webRTCClient
-        let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
 
         let gameEngine = GameEngine(webRTCClient: webRTCClient, supabaseService: supabaseService)
         self._gameEngine = StateObject(wrappedValue: gameEngine)
+
+        let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
+        let headPoseDetectionRenderer = HeadPoseDetectionRenderer(delegate: gameEngine)
+        self.headPoseDetectionRenderer = headPoseDetectionRenderer
 
         self._viewModel = StateObject(
             wrappedValue: MatchViewModel(
@@ -165,8 +168,6 @@ struct MatchView: View {
         remoteView.transform = CGAffineTransform(scaleX: -1, y: 1)
 
         // Create and set up the keypoint detection renderer
-        let keypointRenderer = KeypointDetectionRenderer(gameEngine: gameEngine)
-        self.keypointRenderer = keypointRenderer
-        webRTCClient.renderRemoteVideo(to: keypointRenderer)
+        webRTCClient.renderRemoteVideo(to: headPoseDetectionRenderer)
     }
 }

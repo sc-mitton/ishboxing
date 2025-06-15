@@ -12,6 +12,14 @@ enum DragState {
 }
 
 final class GameEngine: ObservableObject {
+    /*
+    GameEngine is responsible for managing the game state and logic.
+    It is responsible for:
+    - Managing the game state
+    - Managing the game logic
+    - Managing the game data (including that sent over WebRTC)
+    */
+
     @Published public private(set) var gameState: GameState = .idle
     @Published public private(set) var countdown: Int? = nil
     @Published public private(set) var localSwipePoints: [CGPoint] = []
@@ -302,6 +310,14 @@ final class GameEngine: ObservableObject {
         }
 
         return CGVector(dx: 0, dy: 0)
+    }
+}
+
+extension GameEngine: HeadPoseDetectionDelegate {
+    func headPoseDetectionRenderer(
+        _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: [Keypoint]
+    ) {
+        updateHeadPosition(headPose)
     }
 }
 

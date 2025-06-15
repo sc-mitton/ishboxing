@@ -2,17 +2,19 @@ import Foundation
 import UIKit
 import WebRTC
 
-class KeypointDetectionRenderer: NSObject, RTCVideoRenderer {
-    private let processingQueue = DispatchQueue(label: "com.ishboxing.keypointdetection")
+class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
+    private let processingQueue = DispatchQueue(label: "com.ishboxing.headposedetectionrenderer")
     private var isProcessing = false
     private var frameCount = 0
     private let processEveryNFrames = 5  // Process every 5th frame to reduce load
-    private weak var gameEngine: GameEngine?
-    private let roboflowService: RoboflowService
+    private let headPoseDetectionService: HeadPoseDetectionService
+    private weak var delegate: HeadPoseDetectionDelegate?
 
-    init(gameEngine: GameEngine, roboflowService: RoboflowService = RoboflowService()) {
-        self.gameEngine = gameEngine
-        self.roboflowService = roboflowService
+    init(
+        headPoseDetectionService: HeadPoseDetectionService = HeadPoseDetectionService(),
+        delegate: HeadPoseDetectionDelegate
+    ) {
+        self.headPoseDetectionService = headPoseDetectionService
         super.init()
     }
 
@@ -45,11 +47,11 @@ class KeypointDetectionRenderer: NSObject, RTCVideoRenderer {
 
     private func processKeypoints(_ image: UIImage) async {
         do {
-            let keypoints = try await roboflowService.detectKeypoints(in: image)
+            let headPose = try await headPoseDetectionService.detectHeadPose(in: image)
 
             // Update game engine on the main thread
             await MainActor.run {
-                gameEngine?.updateHeadPosition(keypoints)
+                delegate?.headPoseDetectionRenderer(self, didUpdateHeadPose: headPose)
             }
         } catch {
             print("Error processing keypoints: \(error)")
@@ -75,4 +77,9 @@ class KeypointDetectionRenderer: NSObject, RTCVideoRenderer {
 
         return UIImage(cgImage: cgImage)
     }
+}
+
+protocol HeadPoseDetectionDelegate: AnyObject {
+    func headPoseDetectionRenderer(
+        _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: [Keypoint])
 }
