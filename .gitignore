@@ -14,9 +14,9 @@ supabase/functions/.env
 note.txt
 ngrok.log
 
-models/**/images
-models/**/labels
-models/**/test
-models/**/runs
-models/**/train
-models/**/valid
+ml/**/images
+ml/**/labels
+ml/**/test
+ml/**/runs
+ml/**/train
+ml/**/valid
