@@ -140,15 +140,6 @@ struct MatchView: View {
         .onAppear {
             setupVideoViews()
         }
-        .onChange(of: viewModel.webRTCConnectionState) { oldState, newState in
-            if newState == .connected {
-                // Re-render remote video when connection is established
-                if let remoteView = remoteVideoView {
-                    webRTCClient.renderRemoteVideo(to: remoteView)
-                }
-                gameEngine.setState(state: .starting)
-            }
-        }
     }
 
     private func setupVideoViews() {
@@ -166,8 +157,5 @@ struct MatchView: View {
         remoteView.backgroundColor = .black
         remoteVideoView = remoteView
         remoteView.transform = CGAffineTransform(scaleX: -1, y: 1)
-
-        // Create and set up the keypoint detection renderer
-        webRTCClient.renderRemoteVideo(to: headPoseDetectionRenderer)
     }
 }

@@ -37,7 +37,7 @@ final class WebRTCClient: NSObject {
     private var remoteVideoTrack: RTCVideoTrack?
     private var localDataChannel: RTCDataChannel?
     private var remoteDataChannel: RTCDataChannel?
-    private var localVideoRenderer: RTCVideoRenderer?
+    private var localVideoRenderers: [RTCVideoRenderer] = []
     private var remoteVideoRenderer: RTCVideoRenderer?
 
     public var hasExchangedSDP: Bool = false
@@ -131,8 +131,8 @@ final class WebRTCClient: NSObject {
             debugPrint("Failed to get camera capturer")
             return
         }
-        self.localVideoRenderer = renderer
-        debugPrint("Local video renderer set")
+        self.localVideoRenderers.append(renderer)
+        debugPrint("Local video renderer added")
 
         guard
             let frontCamera: AVCaptureDevice =
@@ -167,10 +167,19 @@ final class WebRTCClient: NSObject {
         }
     }
 
-    func stopCaptureLocalVideo() {
-        if let renderer = self.localVideoRenderer {
-            self.localVideoTrack?.remove(renderer)
-            self.localVideoRenderer = nil
+    func stopCaptureLocalVideo(renderer: RTCVideoRenderer? = nil) {
+        if let renderer = renderer {
+            // Remove specific renderer
+            if let index = localVideoRenderers.firstIndex(where: { $0 === renderer }) {
+                localVideoRenderers.remove(at: index)
+                self.localVideoTrack?.remove(renderer)
+            }
+        } else {
+            // Remove all renderers
+            for renderer in localVideoRenderers {
+                self.localVideoTrack?.remove(renderer)
+            }
+            localVideoRenderers.removeAll()
         }
     }
 
@@ -261,11 +270,11 @@ final class WebRTCClient: NSObject {
         debugPrint("Closing WebRTC connection")
         self.peerConnection.close()
 
-        // Safely remove local video track from renderer
-        if let renderer = self.localVideoRenderer,
-            let videoTrack = self.localVideoTrack
-        {
-            videoTrack.remove(renderer)
+        // Safely remove local video track from all renderers
+        if let videoTrack = self.localVideoTrack {
+            for renderer in localVideoRenderers {
+                videoTrack.remove(renderer)
+            }
         }
 
         // Safely stop camera capture
@@ -275,7 +284,7 @@ final class WebRTCClient: NSObject {
 
         // Clear all references
         self.localVideoTrack = nil
-        self.localVideoRenderer = nil
+        self.localVideoRenderers.removeAll()
         self.remoteVideoTrack = nil
         self.localDataChannel = nil
         self.remoteDataChannel = nil
