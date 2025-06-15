@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RoundResults: View {
     let roundResults: [[Int?]]
-    let currentRound: [Int]
+    let currentRound: Int
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isExpanded = true
 
@@ -77,7 +77,7 @@ struct RoundResults: View {
 struct RoundCircle: View {
     let roundIndex: Int
     let roundResults: [[Int?]]
-    let currentRound: [Int]
+    let currentRound: Int
 
     var body: some View {
         ZStack {
@@ -85,8 +85,8 @@ struct RoundCircle: View {
                 .stroke(Color.white, lineWidth: 2)
                 .frame(width: 28, height: 28)
 
-            if roundIndex < currentRound[0] {
-                if let result = roundResults[roundIndex][currentRound[1]] {
+            if roundIndex < currentRound {
+                if let result = roundResults[roundIndex][1] {
                     if result > 0 {
                         // Win - show star
                         ZStack {
@@ -115,6 +115,6 @@ struct RoundCircle: View {
 #Preview {
     RoundResults(
         roundResults: Array(repeating: [nil, nil], count: 12),
-        currentRound: [0, 0]
+        currentRound: 0
     )
 }

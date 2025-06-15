@@ -13,3 +13,10 @@ Config.xcconfig
 supabase/functions/.env
 note.txt
 ngrok.log
+
+models/**/images
+models/**/labels
+models/**/test
+models/**/runs
+models/**/train
+models/**/valid

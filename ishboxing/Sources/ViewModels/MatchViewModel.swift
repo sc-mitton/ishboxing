@@ -106,7 +106,6 @@ extension MatchViewModel: WebRTCClientDelegate {
                     let pointDict = try JSONDecoder().decode(
                         [String: Double].self, from: payload.data)
                     let point = CGPoint(x: pointDict["x"] ?? 0, y: pointDict["y"] ?? 0)
-                    debugPrint("received swipePoint: \(point)")
                     DispatchQueue.main.async {
                         self.gameEngine.remoteSwipe(point: point)
                     }
@@ -117,11 +116,11 @@ extension MatchViewModel: WebRTCClientDelegate {
                 }
             case "punchConnected":
                 DispatchQueue.main.async {
-                    self.gameEngine.onPunchConnected()
+                    self.gameEngine.onRemotePunchConnected()
                 }
             case "punchDodged":
                 DispatchQueue.main.async {
-                    self.gameEngine.onPunchDodged()
+                    self.gameEngine.onRemotePunchDodged()
                 }
             case "screenSize":
                 let screenSizeDict = try JSONDecoder().decode(

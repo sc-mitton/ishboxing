@@ -4,7 +4,7 @@ import WebRTC
 
 let MAX_SWIPE_POINTS = 40
 let POINTS_CLEAR_DELAY: TimeInterval = 0.5
-let DOT_PRODUCT_THRESHOLD: Double = 0.8
+let DOT_PRODUCT_THRESHOLD: Double = 0.7
 
 enum DragState {
     case idle
@@ -16,7 +16,8 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var countdown: Int? = nil
     @Published public private(set) var localSwipePoints: [CGPoint] = []
     @Published public private(set) var remoteSwipePoints: [CGPoint] = []
-    @Published public private(set) var round = [0, 0]
+    @Published public private(set) var round = 0
+    // Format is [current user's dodges, opponent's dodges] for each round
     @Published public private(set) var roundResults: [[Int?]] = Array(
         repeating: [nil, nil], count: 12)
     @Published public private(set) var onOffense: Bool = false
@@ -24,6 +25,9 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var bottomMessage: String?
     @Published public private(set) var isCountdownActive: Bool = false
     @Published public private(set) var isGameOver: Bool = false
+    @Published public private(set) var headPosition: CGPoint?
+    @Published public private(set) var dodgeVector: CGVector?
+    @Published public private(set) var lastHeadPosition: CGPoint?
 
     private var waitingThrowResult: Bool = false
     private var webRTCClient: WebRTCClient
@@ -32,6 +36,9 @@ final class GameEngine: ObservableObject {
 
     private var countdownTimer: AnyCancellable?
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    private var headPositionHistory: [CGPoint] = []
+    private let maxHistorySize = 10
 
     public var oponentIsReady: Bool = false
     public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
@@ -74,16 +81,41 @@ final class GameEngine: ObservableObject {
         self.gameState = state
     }
 
-    func onPunchConnected() {
-        round[1] = round[1] > 0 ? round[1] + 1 : 1
-        round[0] += 1
+    func onLocalPunchConnected() {
+        // Update round
+        round += 1
 
+        // Flip who is on offense
+        onOffense = !onOffense
+
+        // Send punch connected message to opponent
+        let payload = RTCDataPayload(type: "punchConnected", data: Data())
+        let encodedPayload = try! JSONEncoder().encode(payload)
+        webRTCClient.sendData(encodedPayload)
+    }
+
+    func onLocalPunchDodged() {
+        // Update round results
+        roundResults[round][0] = (roundResults[round][0] ?? 0) + 1
+
+        // Send punch dodged message to opponent
+        let payload = RTCDataPayload(type: "punchDodged", data: Data())
+        let encodedPayload = try! JSONEncoder().encode(payload)
+        webRTCClient.sendData(encodedPayload)
+    }
+
+    func onRemotePunchConnected() {
+        // Update round results
+        roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
+
+        // Update round
         // Flip who is on offense
         onOffense = !onOffense
     }
 
-    func onPunchDodged() {
-        roundResults[round[0]][round[1]] = (roundResults[round[0]][round[1]] ?? 0) + 1
+    func onRemotePunchDodged() {
+        // Update round results
+        roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
     }
 
     func localSwipe(point: CGPoint?, isLocal: Bool = false) {
@@ -127,12 +159,20 @@ final class GameEngine: ObservableObject {
     }
 
     func handleThrown() {
-        // TODO: Implement punch handling
-        // 1. Determine the direction of the throw from the remote points list
-        // 2. Simultaneously, determine the direction of the dodge
-        // (from head movements of the user, determined by keypoint detection model)
-        // 3. Determine if the throw connected or not by the dot product of the throw vector and the dodge vector
-        // if the dot product is between .8 and 1, then the direction is the same and the throw connected
+        // Handle thrown punch from opponent
+
+        // Now we can use the dodge vector to determine if a punch was dodged
+        if let dodgeVector = dodgeVector {
+            let magnitude = sqrt(dodgeVector.dx * dodgeVector.dx + dodgeVector.dy * dodgeVector.dy)
+            if magnitude > 0.1 {  // Threshold for successful dodge
+                onLocalPunchDodged()
+            } else {
+                onLocalPunchConnected()
+            }
+        } else {
+            // If we don't have a dodge vector, assume the punch connected
+            onLocalPunchConnected()
+        }
     }
 
     func smoothPoints(points: inout [CGPoint], windowSize: Int) {
@@ -213,4 +253,62 @@ final class GameEngine: ObservableObject {
                 }
             }
     }
+
+    func updateHeadPosition(_ keypoints: [Keypoint]) {
+        // Process the keypoints to determine head position
+        if let headKeypoint = keypoints.first(where: { $0.name == "head" && $0.confidence > 0.7 }) {
+            let newPosition = CGPoint(x: headKeypoint.x, y: headKeypoint.y)
+
+            // Update history
+            headPositionHistory.append(newPosition)
+            if headPositionHistory.count > maxHistorySize {
+                headPositionHistory.removeFirst()
+            }
+
+            // Update positions
+            lastHeadPosition = headPosition
+            headPosition = newPosition
+
+            // Calculate dodge vector if we have enough history
+            if headPositionHistory.count >= 2 {
+                dodgeVector = calculateDodgeVector(from: headPositionHistory)
+            }
+        }
+    }
+
+    private func calculateDodgeVector(from history: [CGPoint]) -> CGVector {
+        guard history.count >= 2 else { return CGVector(dx: 0, dy: 0) }
+
+        // Calculate the average movement over the last few frames
+        var totalDx: CGFloat = 0
+        var totalDy: CGFloat = 0
+        let count = CGFloat(history.count - 1)
+
+        for i in 1..<history.count {
+            let current = history[i]
+            let previous = history[i - 1]
+            totalDx += current.x - previous.x
+            totalDy += current.y - previous.y
+        }
+
+        // Normalize the vector
+        let dx = totalDx / count
+        let dy = totalDy / count
+        let magnitude = sqrt(dx * dx + dy * dy)
+
+        // Only return significant movements
+        if magnitude > 0.05 {  // Threshold for significant movement
+            return CGVector(dx: dx, dy: dy)
+        }
+
+        return CGVector(dx: 0, dy: 0)
+    }
+}
+
+// Add this struct to represent keypoints
+struct Keypoint {
+    let name: String
+    let x: CGFloat
+    let y: CGFloat
+    let confidence: Float
 }

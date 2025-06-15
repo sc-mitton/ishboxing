@@ -27,3 +27,15 @@ struct WebRTCConfig {
     static let `default` = WebRTCConfig(
         iceServers: defaultIceServers)
 }
+
+struct RoboflowConfig {
+    let apiKey: String
+    let modelId: String
+    let modelVersion: String
+
+    static let `default` = RoboflowConfig(
+        apiKey: "YOUR_API_KEY",  // Replace with your actual API key
+        modelId: "your-model",  // Replace with your actual model ID
+        modelVersion: "1"  // Replace with your actual model version
+    )
+}

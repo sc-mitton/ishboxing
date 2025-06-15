@@ -16,6 +16,7 @@ struct MatchView: View {
     @State private var remoteVideoView: RTCMTLVideoView?
     @State private var hasRemoteVideoTrack = false
     @State private var match: Match?
+    @State private var keypointRenderer: KeypointDetectionRenderer?
 
     init(friend: User, match: Match?, onDismiss: @escaping () -> Void) {
         self.friend = friend
@@ -162,5 +163,10 @@ struct MatchView: View {
         remoteView.backgroundColor = .black
         remoteVideoView = remoteView
         remoteView.transform = CGAffineTransform(scaleX: -1, y: 1)
+
+        // Create and set up the keypoint detection renderer
+        let keypointRenderer = KeypointDetectionRenderer(gameEngine: gameEngine)
+        self.keypointRenderer = keypointRenderer
+        webRTCClient.renderRemoteVideo(to: keypointRenderer)
     }
 }
