@@ -262,28 +262,6 @@ final class GameEngine: ObservableObject {
             }
     }
 
-    func updateHeadPosition(_ keypoints: [Keypoint]) {
-        // Process the keypoints to determine head position
-        if let headKeypoint = keypoints.first(where: { $0.name == "head" && $0.confidence > 0.7 }) {
-            let newPosition = CGPoint(x: headKeypoint.x, y: headKeypoint.y)
-
-            // Update history
-            headPositionHistory.append(newPosition)
-            if headPositionHistory.count > maxHistorySize {
-                headPositionHistory.removeFirst()
-            }
-
-            // Update positions
-            lastHeadPosition = headPosition
-            headPosition = newPosition
-
-            // Calculate dodge vector if we have enough history
-            if headPositionHistory.count >= 2 {
-                dodgeVector = calculateDodgeVector(from: headPositionHistory)
-            }
-        }
-    }
-
     private func calculateDodgeVector(from history: [CGPoint]) -> CGVector {
         guard history.count >= 2 else { return CGVector(dx: 0, dy: 0) }
 
@@ -315,16 +293,26 @@ final class GameEngine: ObservableObject {
 
 extension GameEngine: HeadPoseDetectionDelegate {
     func headPoseDetectionRenderer(
-        _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: [Keypoint]
+        _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation
     ) {
-        updateHeadPosition(headPose)
-    }
-}
+        // // Process the keypoints to determine head position
+        // if let headKeypoint = headPose.first(where: { $0.name == "head" && $0.confidence > 0.7 }) {
+        //     let newPosition = CGPoint(x: headKeypoint.x, y: headKeypoint.y)
 
-// Add this struct to represent keypoints
-struct Keypoint {
-    let name: String
-    let x: CGFloat
-    let y: CGFloat
-    let confidence: Float
+        //     // Update history
+        //     headPositionHistory.append(newPosition)
+        //     if headPositionHistory.count > maxHistorySize {
+        //         headPositionHistory.removeFirst()
+        //     }
+
+        //     // Update positions
+        //     lastHeadPosition = headPosition
+        //     headPosition = newPosition
+
+        //     // Calculate dodge vector if we have enough history
+        //     if headPositionHistory.count >= 2 {
+        //         dodgeVector = calculateDodgeVector(from: headPositionHistory)
+        //     }
+        // }
+    }
 }

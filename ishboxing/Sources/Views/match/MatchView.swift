@@ -151,6 +151,9 @@ struct MatchView: View {
         localView.transform = CGAffineTransform(scaleX: -1, y: 1)
         webRTCClient.startCaptureLocalVideo(renderer: localView)
 
+        // Add head pose detection renderer
+        webRTCClient.startCaptureLocalVideo(renderer: headPoseDetectionRenderer)
+
         // Setup remote video view
         let remoteView = RTCMTLVideoView()
         remoteView.videoContentMode = .scaleAspectFill

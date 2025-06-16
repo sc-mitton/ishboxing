@@ -54,7 +54,7 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
                 delegate?.headPoseDetectionRenderer(self, didUpdateHeadPose: headPose)
             }
         } catch {
-            print("Error processing keypoints: \(error)")
+            debugPrint("Error processing keypoints: \(error)")
         }
     }
 
@@ -81,5 +81,5 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
 
 protocol HeadPoseDetectionDelegate: AnyObject {
     func headPoseDetectionRenderer(
-        _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: [Keypoint])
+        _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation)
 }
