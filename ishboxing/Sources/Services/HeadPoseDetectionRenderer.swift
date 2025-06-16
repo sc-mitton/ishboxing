@@ -71,16 +71,19 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
         let pixelBuffer = buffer.pixelBuffer
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
-        // Resize to fixed 224x224 resolution
-        let targetSize = CGSize(width: 224, height: 224)
+        let targetSize = CGSize(width: 640, height: 640)
         let scaleX = targetSize.width / ciImage.extent.width
         let scaleY = targetSize.height / ciImage.extent.height
-        let scaledImage =
+        let scaledRotatedImage =
             ciImage
             .cropped(to: ciImage.extent)
             .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+            .transformed(by: CGAffineTransform(rotationAngle: -0.5 * .pi))
 
-        guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledImage.extent) else {
+        guard
+            let cgImage = ciContext.createCGImage(
+                scaledRotatedImage, from: scaledRotatedImage.extent)
+        else {
             return nil
         }
 

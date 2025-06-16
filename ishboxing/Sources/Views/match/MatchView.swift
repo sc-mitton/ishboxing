@@ -74,13 +74,13 @@ struct MatchView: View {
                                 .stroke(Color.ishBlue, lineWidth: 4)
                         )
 
-                    if let observation = gameEngine.headPoseObservation {
-                        PoseAnnotation(
-                            headPose: observation,
-                            viewSize: CGSize(width: 120, height: 160)
-                        )
-                        .frame(width: 120, height: 160)
-                    }
+                    // if let observation = gameEngine.headPoseObservation {
+                    //     PoseAnnotation(
+                    //         headPose: observation,
+                    //         viewSize: CGSize(width: 120, height: 160)
+                    //     )
+                    //     .frame(width: 120, height: 160)
+                    // }
                 }
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)

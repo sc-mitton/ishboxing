@@ -34,6 +34,7 @@ struct PoseAnnotation: View {
                         x: headPose.boundingBox.midX * xScale + xOffset,
                         y: headPose.boundingBox.midY * yScale + yOffset
                     )
+                    .scaleEffect(x: -1, y: 1, anchor: .center)  // -1 because we mirror the image in the video view
 
                 // Draw keypoints
                 ForEach(headPose.keypoints, id: \.name) { keypoint in
@@ -44,6 +45,7 @@ struct PoseAnnotation: View {
                             x: keypoint.x * xScale + xOffset,
                             y: keypoint.y * yScale + yOffset
                         )
+                        .scaleEffect(x: -1, y: 1, anchor: .center)  // -1 because we mirror the image in the video view
                 }
             }
         }

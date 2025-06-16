@@ -5,7 +5,7 @@ import WebRTC
 let MAX_SWIPE_POINTS = 40
 let POINTS_CLEAR_DELAY: TimeInterval = 0.5
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
-let MAX_HEAD_POSE_HISTORY_SIZE = 10
+let MAX_HEAD_POSE_HISTORY_SIZE = 20
 
 enum DragState {
     case idle
@@ -34,7 +34,6 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var bottomMessage: String?
     @Published public private(set) var isCountdownActive: Bool = false
     @Published public private(set) var isGameOver: Bool = false
-    @Published public private(set) var headPoseObservation: HeadPoseObservation?
     @Published public private(set) var dodgeVector: CGVector?
 
     private var waitingThrowResult: Bool = false
@@ -45,7 +44,7 @@ final class GameEngine: ObservableObject {
     private var countdownTimer: AnyCancellable?
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private var headPositionHistory: [CGPoint] = []
+    private var headPositionHistory: [HeadPoseObservation] = []
     private let maxHistorySize = 10
 
     public var oponentIsReady: Bool = false
@@ -295,26 +294,10 @@ extension GameEngine: HeadPoseDetectionDelegate {
     func headPoseDetectionRenderer(
         _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation
     ) {
-        debugPrint("GameEngine received head pose: \(headPose)")
-        headPoseObservation = headPose
-        // // Process the keypoints to determine head position
-        // if let headKeypoint = headPose.first(where: { $0.name == "head" && $0.confidence > 0.7 }) {
-        //     let newPosition = CGPoint(x: headKeypoint.x, y: headKeypoint.y)
-
-        //     // Update history
-        //     headPositionHistory.append(newPosition)
-        //     if headPositionHistory.count > maxHistorySize {
-        //         headPositionHistory.removeFirst()
-        //     }
-
-        //     // Update positions
-        //     lastHeadPosition = headPosition
-        //     headPosition = newPosition
-
-        //     // Calculate dodge vector if we have enough history
-        //     if headPositionHistory.count >= 2 {
-        //         dodgeVector = calculateDodgeVector(from: headPositionHistory)
-        //     }
-        // }
+        // Update history
+        headPositionHistory.append(headPose)
+        if headPositionHistory.count > maxHistorySize {
+            headPositionHistory.removeFirst()
+        }
     }
 }

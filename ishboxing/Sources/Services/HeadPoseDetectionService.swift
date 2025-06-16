@@ -19,9 +19,6 @@ struct Keypoint {
     let confidence: Float
 }
 
-let imageWidth: CGFloat = 640
-let imageHeight: CGFloat = 640
-
 class HeadPoseDetectionService {
     private var model: FacePose?
     private var visionModel: VNCoreMLModel?
@@ -47,7 +44,7 @@ class HeadPoseDetectionService {
         }
 
         let requestHandler = VNImageRequestHandler(
-            cgImage: image.resize(to: CGSize(width: imageWidth, height: imageHeight)).cgImage!,
+            cgImage: image.cgImage!,
             options: [:]
         )
 
