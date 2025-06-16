@@ -6,6 +6,7 @@ let MAX_SWIPE_POINTS = 40
 let POINTS_CLEAR_DELAY: TimeInterval = 0.5
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
 let MAX_HEAD_POSE_HISTORY_SIZE = 20
+let REACTION_CUTOFF_TIME: TimeInterval = 0.25
 
 enum DragState {
     case idle
@@ -34,7 +35,7 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var bottomMessage: String?
     @Published public private(set) var isCountdownActive: Bool = false
     @Published public private(set) var isGameOver: Bool = false
-    @Published public private(set) var dodgeVector: CGVector?
+    @Published public private(set) var headPositionHistory: [HeadPoseObservation] = []
 
     private var waitingThrowResult: Bool = false
     private var webRTCClient: WebRTCClient
@@ -44,7 +45,6 @@ final class GameEngine: ObservableObject {
     private var countdownTimer: AnyCancellable?
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private var headPositionHistory: [HeadPoseObservation] = []
     private let maxHistorySize = 10
 
     public var oponentIsReady: Bool = false
@@ -123,6 +123,7 @@ final class GameEngine: ObservableObject {
     func onRemotePunchDodged() {
         // Update round results
         roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
+        waitingThrowResult = false
     }
 
     func localSwipe(point: CGPoint?, isLocal: Bool = false) {
@@ -161,24 +162,28 @@ final class GameEngine: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
                 self.remoteSwipePoints.removeAll()
             }
-            handleThrown()
+            DispatchQueue.main.asyncAfter(deadline: .now() + REACTION_CUTOFF_TIME) {
+                self.handleThrown()
+            }
         }
     }
 
     func handleThrown() {
         // Handle thrown punch from opponent
+        // A thrown punch is when the opponent's finger has lifted from the screen, which results
+        // in a null swipe point being sent, indicating the end. The user then has a short window
+        // to react.
 
         // Now we can use the dodge vector to determine if a punch was dodged
-        if let dodgeVector = dodgeVector {
-            let magnitude = sqrt(dodgeVector.dx * dodgeVector.dx + dodgeVector.dy * dodgeVector.dy)
-            if magnitude > 0.1 {  // Threshold for successful dodge
-                onLocalPunchDodged()
-            } else {
-                onLocalPunchConnected()
-            }
-        } else {
-            // If we don't have a dodge vector, assume the punch connected
+        let dodgeVector = calculateDodgeVector()
+        let throwVector = calculateThrowVector()
+
+        // Calculate dot product of throw vector and dodge vector, if it's greater than 0.7, the punch connected
+        let dotProduct = throwVector.x * dodgeVector.dx + throwVector.y * dodgeVector.dy
+        if dotProduct > 0.7 {
             onLocalPunchConnected()
+        } else {
+            onLocalPunchDodged()
         }
     }
 
@@ -261,19 +266,41 @@ final class GameEngine: ObservableObject {
             }
     }
 
-    private func calculateDodgeVector(from history: [CGPoint]) -> CGVector {
-        guard history.count >= 2 else { return CGVector(dx: 0, dy: 0) }
+    private func calculateThrowVector() -> CGPoint {
+        guard headPositionHistory.count >= 2 else { return CGPoint(x: 0, y: 0) }
 
         // Calculate the average movement over the last few frames
         var totalDx: CGFloat = 0
         var totalDy: CGFloat = 0
-        let count = CGFloat(history.count - 1)
+        let count = CGFloat(headPositionHistory.count - 1)
 
-        for i in 1..<history.count {
-            let current = history[i]
-            let previous = history[i - 1]
-            totalDx += current.x - previous.x
-            totalDy += current.y - previous.y
+        for i in 1..<headPositionHistory.count {
+            let current = headPositionHistory[i]
+            let previous = headPositionHistory[i - 1]
+            totalDx += current.keypoints[0].x - previous.keypoints[0].x
+            totalDy += current.keypoints[0].y - previous.keypoints[0].y
+        }
+
+        // Normalize the vector
+        let dx = totalDx / count
+        let dy = totalDy / count
+
+        return CGPoint(x: dx, y: dy)
+    }
+
+    private func calculateDodgeVector() -> CGVector {
+        guard headPositionHistory.count >= 2 else { return CGVector(dx: 0, dy: 0) }
+
+        // Calculate the average movement over the last few frames
+        var totalDx: CGFloat = 0
+        var totalDy: CGFloat = 0
+        let count = CGFloat(headPositionHistory.count - 1)
+
+        for i in 1..<headPositionHistory.count {
+            let current = headPositionHistory[i]
+            let previous = headPositionHistory[i - 1]
+            totalDx += current.keypoints[0].x - previous.keypoints[0].x
+            totalDy += current.keypoints[0].y - previous.keypoints[0].y
         }
 
         // Normalize the vector

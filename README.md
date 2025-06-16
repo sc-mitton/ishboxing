@@ -52,3 +52,4 @@ would be closer to the real life game (detecting hand gestures in the camera)
     - The winner of each round is whoever had the longest streak of dodging their opponent's punches
     - The overall winner is the best of 12 rounds
 4. Implement TURN server for certain network conditions
+5. Allow different sensativities for the match (how fast the user must react)
