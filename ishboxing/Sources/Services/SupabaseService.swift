@@ -3,6 +3,11 @@ import Supabase
 
 struct ProfileResponse: Codable {
     let id: String
+    let username: String?
+}
+
+struct UsernameResponse: Codable {
+    let username: String?
 }
 
 class SupabaseService: ObservableObject {
@@ -26,13 +31,11 @@ class SupabaseService: ObservableObject {
             supabaseURL: URL(string: updatedSupabaseURL)!,
             supabaseKey: supabaseKey
         )
-
-        // Set up auth state change listener
+        // Check initial auth state
         Task {
-            for await (_, session) in client.auth.authStateChanges {
-                await MainActor.run {
-                    self.isAuthenticated = session != nil
-                }
+            let session = try? await client.auth.session
+            await MainActor.run {
+                self.isAuthenticated = session != nil
             }
         }
     }
@@ -81,12 +84,26 @@ class SupabaseService: ObservableObject {
         )
     }
 
-    func hasProfile() async throws -> Bool {
-        let session = try await client.auth.session
-        let userId = session.user.id
-        let response = try await client.from("profiles").select("*").eq("id", value: userId)
+    func haseUsername() async throws -> Bool {
+        do {
+            let session = try await client.auth.session
+            let userId = session.user.id
+            let response = try await client.from("profiles").select("username").eq(
+                "id", value: userId
+            )
             .single().execute()
-        return response.data.count > 0
+
+            do {
+                let profile = try decoder.decode(UsernameResponse.self, from: response.data)
+                return profile.username != nil
+            } catch {
+                debugPrint("Failed to decode profile: \(error)")
+                throw error
+            }
+        } catch {
+            debugPrint("Error in haseUsername: \(error)")
+            throw error
+        }
     }
 
     func updateUsername(_ username: String) async throws {

@@ -81,9 +81,9 @@ struct OTPVerificationView: View {
         do {
             let e164PhoneNumber = "1" + userManagement.phoneNumber!.filter { $0.isNumber }
             try await supabaseService.verifyOTP(phoneNumber: e164PhoneNumber, token: otp)
-            let hasProfile = try await supabaseService.hasProfile()
+            let hasUsername = try await supabaseService.haseUsername()
             await MainActor.run {
-                if hasProfile {
+                if hasUsername {
                     supabaseService.isAuthenticated = true
                     router.path.removeLast(router.path.count)
                 } else {
