@@ -29,9 +29,6 @@ struct MatchView: View {
         self._gameEngine = StateObject(wrappedValue: gameEngine)
 
         let signalClient = SignalClient(supabase: supabaseService, webRTCClient: webRTCClient)
-        let headPoseDetectionRenderer = HeadPoseDetectionRenderer(delegate: gameEngine)
-        self.headPoseDetectionRenderer = headPoseDetectionRenderer
-
         self._viewModel = StateObject(
             wrappedValue: MatchViewModel(
                 signalClient: signalClient,
@@ -41,6 +38,9 @@ struct MatchView: View {
                 match: match,
                 onDismiss: onDismiss
             ))
+        let headPoseDetectionRenderer = HeadPoseDetectionRenderer(delegate: gameEngine)
+        self.headPoseDetectionRenderer = headPoseDetectionRenderer
+        self.headPoseDetectionRenderer.delegate = gameEngine
     }
 
     var body: some View {
@@ -65,15 +65,25 @@ struct MatchView: View {
 
             // Local video view (smaller, top right corner)
             if let localVideoView = localVideoView {
-                VideoView(videoView: localVideoView)
-                    .frame(width: 120, height: 160)
-                    .cornerRadius(24)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.ishBlue, lineWidth: 4)
-                    )
-                    .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                ZStack {
+                    VideoView(videoView: localVideoView)
+                        .frame(width: 120, height: 160)
+                        .cornerRadius(24)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(Color.ishBlue, lineWidth: 4)
+                        )
+
+                    if let observation = gameEngine.headPoseObservation {
+                        PoseAnnotation(
+                            headPose: observation,
+                            viewSize: CGSize(width: 120, height: 160)
+                        )
+                        .frame(width: 120, height: 160)
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
 
             // Swipe Paths

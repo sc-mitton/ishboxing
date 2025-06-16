@@ -4,18 +4,26 @@ import WebRTC
 
 class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
     private let processingQueue = DispatchQueue(label: "com.ishboxing.headposedetectionrenderer")
-    private var isProcessing = false
-    private var frameCount = 0
-    private let processEveryNFrames = 5  // Process every 5th frame to reduce load
     private let headPoseDetectionService: HeadPoseDetectionService
-    private weak var delegate: HeadPoseDetectionDelegate?
+    private let ciContext = CIContext(options: [CIContextOption.cacheIntermediates: false])
+    weak var delegate: HeadPoseDetectionDelegate?
+
+    private var frameCount = 0
+    private let processEveryNFrames = 5
+    private var pendingTask: Task<Void, Never>?
+    private var isProcessing = false
 
     init(
         headPoseDetectionService: HeadPoseDetectionService = HeadPoseDetectionService(),
         delegate: HeadPoseDetectionDelegate
     ) {
         self.headPoseDetectionService = headPoseDetectionService
+        self.delegate = delegate
         super.init()
+    }
+
+    deinit {
+        pendingTask?.cancel()
     }
 
     func setSize(_ size: CGSize) {
@@ -23,55 +31,65 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
     }
 
     func renderFrame(_ frame: RTCVideoFrame?) {
-        guard let frame = frame,
-            !isProcessing
-        else { return }
+        guard let frame = frame else { return }
 
         frameCount += 1
         guard frameCount % processEveryNFrames == 0 else { return }
 
+        // Prevent overlapping tasks
+        guard !isProcessing else { return }
         isProcessing = true
 
         processingQueue.async { [weak self] in
-            defer { self?.isProcessing = false }
+            guard let self = self else { return }
 
-            // Convert RTCVideoFrame to UIImage
-            guard let image = self?.convertFrameToImage(frame) else { return }
+            autoreleasepool {
+                guard let image = self.convertFrameToImage(frame) else {
+                    self.isProcessing = false
+                    return
+                }
 
-            // Process the image with keypoint detection
-            Task {
-                await self?.processKeypoints(image)
+                self.pendingTask = Task { [weak self] in
+                    guard let self = self else { return }
+                    await self.processKeypoints(image)
+                }
             }
         }
     }
 
     private func processKeypoints(_ image: UIImage) async {
+        defer { isProcessing = false }
+
         do {
             let headPose = try await headPoseDetectionService.detectHeadPose(in: image)
 
-            // Update game engine on the main thread
-            await MainActor.run {
-                delegate?.headPoseDetectionRenderer(self, didUpdateHeadPose: headPose)
+            await MainActor.run { [weak self] in
+                guard let self = self else { return }
+                self.delegate?.headPoseDetectionRenderer(self, didUpdateHeadPose: headPose)
             }
         } catch {
-            debugPrint("Error processing keypoints: \(error)")
+            debugPrint("❌ Error processing keypoints: \(error)")
         }
     }
 
     private func convertFrameToImage(_ frame: RTCVideoFrame) -> UIImage? {
-        // Convert RTCVideoFrame to UIImage
-        // This will depend on the pixel format of your frame
-        // You might need to handle different pixel formats (I420, NV12, etc.)
-        // Here's a basic example for I420 format:
-
         guard let buffer = frame.buffer as? RTCCVPixelBuffer else {
             return nil
         }
 
         let pixelBuffer = buffer.pixelBuffer
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let context = CIContext()
-        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+
+        // Resize to fixed 224x224 resolution
+        let targetSize = CGSize(width: 224, height: 224)
+        let scaleX = targetSize.width / ciImage.extent.width
+        let scaleY = targetSize.height / ciImage.extent.height
+        let scaledImage =
+            ciImage
+            .cropped(to: ciImage.extent)
+            .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+
+        guard let cgImage = ciContext.createCGImage(scaledImage, from: scaledImage.extent) else {
             return nil
         }
 
