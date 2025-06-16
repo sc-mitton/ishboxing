@@ -3,13 +3,10 @@ import UIKit
 import WebRTC
 
 class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
-    private let processingQueue = DispatchQueue(label: "com.ishboxing.headposedetectionrenderer")
     private let headPoseDetectionService: HeadPoseDetectionService
     private let ciContext = CIContext(options: [CIContextOption.cacheIntermediates: false])
     weak var delegate: HeadPoseDetectionDelegate?
 
-    private var frameCount = 0
-    private let processEveryNFrames = 5
     private var pendingTask: Task<Void, Never>?
     private var isProcessing = false
 
@@ -33,27 +30,22 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
     func renderFrame(_ frame: RTCVideoFrame?) {
         guard let frame = frame else { return }
 
-        frameCount += 1
-        guard frameCount % processEveryNFrames == 0 else { return }
+        // Cancel any pending task before starting a new one
+        pendingTask?.cancel()
+        pendingTask = nil
 
         // Prevent overlapping tasks
         guard !isProcessing else { return }
         isProcessing = true
 
-        processingQueue.async { [weak self] in
+        guard let image = convertFrameToImage(frame) else {
+            isProcessing = false
+            return
+        }
+
+        pendingTask = Task { [weak self] in
             guard let self = self else { return }
-
-            autoreleasepool {
-                guard let image = self.convertFrameToImage(frame) else {
-                    self.isProcessing = false
-                    return
-                }
-
-                self.pendingTask = Task { [weak self] in
-                    guard let self = self else { return }
-                    await self.processKeypoints(image)
-                }
-            }
+            await self.processKeypoints(image)
         }
     }
 
@@ -62,7 +54,6 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
 
         do {
             let headPose = try await headPoseDetectionService.detectHeadPose(in: image)
-
             await MainActor.run { [weak self] in
                 guard let self = self else { return }
                 self.delegate?.headPoseDetectionRenderer(self, didUpdateHeadPose: headPose)

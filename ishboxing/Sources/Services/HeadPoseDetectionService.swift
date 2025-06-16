@@ -1,3 +1,4 @@
+import Accelerate
 import CoreML
 import Foundation
 import UIKit
@@ -20,45 +21,6 @@ struct Keypoint {
 
 let imageWidth: CGFloat = 640
 let imageHeight: CGFloat = 640
-
-extension UIImage {
-    func toCVPixelBuffer() -> CVPixelBuffer? {
-        let attrs =
-            [
-                kCVPixelBufferCGImageCompatibilityKey: true,
-                kCVPixelBufferCGBitmapContextCompatibilityKey: true,
-            ] as CFDictionary
-        var pixelBuffer: CVPixelBuffer?
-        let width = 640
-        let height = 640
-        let status = CVPixelBufferCreate(
-            kCFAllocatorDefault,
-            width,
-            height,
-            kCVPixelFormatType_32ARGB,
-            attrs,
-            &pixelBuffer)
-        guard status == kCVReturnSuccess, let buffer = pixelBuffer else {
-            return nil
-        }
-
-        CVPixelBufferLockBaseAddress(buffer, [])
-        let context = CGContext(
-            data: CVPixelBufferGetBaseAddress(buffer),
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: CVPixelBufferGetBytesPerRow(buffer),
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue)
-        if let context = context, let cgImage = self.cgImage {
-            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-        }
-        CVPixelBufferUnlockBaseAddress(buffer, [])
-
-        return buffer
-    }
-}
 
 class HeadPoseDetectionService {
     private var model: FacePose?
@@ -84,13 +46,8 @@ class HeadPoseDetectionService {
             throw RoboflowError.modelNotLoaded
         }
 
-        let resizedImage = image.resize(to: CGSize(width: imageWidth, height: imageHeight))
-        guard let cgImage = resizedImage.cgImage else {
-            throw RoboflowError.imageConversionFailed
-        }
-
         let requestHandler = VNImageRequestHandler(
-            cgImage: cgImage,
+            cgImage: image.resize(to: CGSize(width: imageWidth, height: imageHeight)).cgImage!,
             options: [:]
         )
 
@@ -121,63 +78,70 @@ class HeadPoseDetectionService {
             return HeadPoseObservation(keypoints: [], confidence: 0.0, boundingBox: .zero)
         }
 
+        let shape = multiArray.shape.map { $0.intValue }  // [1, 23, 8400]
+        let strides = multiArray.strides.map { $0.intValue }  // [193200, 8400, 1]
         let pointer = UnsafeMutablePointer<Float32>(OpaquePointer(multiArray.dataPointer))
-        let anchorCount = 8400
-        let valuesPerAnchor = 23
 
-        var bestConfidence: Float = 0
-        var bestKeypoints: [Keypoint] = []
-        var bestBoundingBox: CGRect = .zero
-
+        let anchorCount = shape[2]  // 8400
         let keypointNames = ["eye-1", "eye-2", "forehead", "mouth-center", "mouth-1", "mouth-2"]
 
+        func sigmoid(_ x: Float32) -> Float32 {
+            return 1.0 / (1.0 + exp(-x))
+        }
+
+        var bestConfidence: Float = 0
+        var bestAnchorIndex: Int? = nil
+
+        // Find the anchor with the highest objectness confidence
         for anchor in 0..<anchorCount {
-            let baseIndex = anchor * valuesPerAnchor
+            let confidenceIndex = 4 * strides[1] + anchor * strides[2]
+            let rawConf = pointer[confidenceIndex]
+            let conf = sigmoid(rawConf)
 
-            let confidence = pointer[baseIndex + 4]  // confidence score
-            if confidence < 0.5 { continue }  // skip low confidence detections
-
-            var keypoints: [Keypoint] = []
-            var totalConfidence: Float = 0
-
-            for i in 0..<6 {
-                let x = pointer[baseIndex + 5 + i * 3]
-                let y = pointer[baseIndex + 5 + i * 3 + 1]
-                let kpConf = pointer[baseIndex + 5 + i * 3 + 2]
-
-                totalConfidence += kpConf
-
-                let keypoint = Keypoint(
-                    name: keypointNames[i],
-                    x: CGFloat(x),
-                    y: CGFloat(y),
-                    confidence: kpConf
-                )
-                keypoints.append(keypoint)
-            }
-
-            if confidence > bestConfidence {
-                bestConfidence = confidence
-                bestKeypoints = keypoints
-
-                // If bounding box values are included and normalized:
-                let cx = pointer[baseIndex + 0]
-                let cy = pointer[baseIndex + 1]
-                let width = pointer[baseIndex + 2]
-                let height = pointer[baseIndex + 3]
-                bestBoundingBox = CGRect(
-                    x: CGFloat(cx - width / 2),
-                    y: CGFloat(cy - height / 2),
-                    width: CGFloat(width),
-                    height: CGFloat(height)
-                )
+            if conf > bestConfidence {
+                bestConfidence = conf
+                bestAnchorIndex = anchor
             }
         }
 
+        // If no good anchor found, return empty
+        guard let bestAnchor = bestAnchorIndex else {
+            return HeadPoseObservation(keypoints: [], confidence: 0.0, boundingBox: .zero)
+        }
+
+        // Extract bounding box
+        let xCenter = pointer[0 * strides[1] + bestAnchor * strides[2]]
+        let yCenter = pointer[1 * strides[1] + bestAnchor * strides[2]]
+        let width = pointer[2 * strides[1] + bestAnchor * strides[2]]
+        let height = pointer[3 * strides[1] + bestAnchor * strides[2]]
+
+        let boundingBox = CGRect(
+            x: CGFloat(xCenter - width / 2),
+            y: CGFloat(yCenter - height / 2),
+            width: CGFloat(width),
+            height: CGFloat(height)
+        )
+
+        // Extract 6 keypoints
+        var keypoints: [Keypoint] = []
+
+        for i in 0..<6 {
+            let x = pointer[(5 + i * 3) * strides[1] + bestAnchor * strides[2]]
+            let y = pointer[(6 + i * 3) * strides[1] + bestAnchor * strides[2]]
+            let conf = pointer[(7 + i * 3) * strides[1] + bestAnchor * strides[2]]
+            keypoints.append(
+                Keypoint(
+                    name: keypointNames[i],
+                    x: CGFloat(x),
+                    y: CGFloat(y),
+                    confidence: conf
+                ))
+        }
+
         return HeadPoseObservation(
-            keypoints: bestKeypoints,
+            keypoints: keypoints,
             confidence: bestConfidence,
-            boundingBox: bestBoundingBox
+            boundingBox: boundingBox
         )
     }
 }
