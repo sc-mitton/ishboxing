@@ -19,6 +19,9 @@ struct HomeView: View {
     @State private var newFriendUsername = ""
     @State private var addFriendError: String?
     @State private var showMatchView = false
+    @State private var wins: Int = 0
+    @State private var losses: Int = 0
+    @State private var streak: Int = 0
 
     var body: some View {
         NavigationStack {
@@ -40,11 +43,11 @@ struct HomeView: View {
 
                         HStack(spacing: 40) {
                             VStack {
-                                Text("Wins")
+                                Text("Record")
                                     .font(.title3)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
-                                Text("0")
+                                Text("\(wins)-\(losses)")
                                     .font(.title2)
                                     .foregroundColor(.white)
                             }
@@ -54,7 +57,7 @@ struct HomeView: View {
                                     .font(.title3)
                                     .fontWeight(.bold)
                                     .foregroundColor(.white)
-                                Text("0")
+                                Text("\(streak)")
                                     .font(.title2)
                                     .foregroundColor(.white)
                             }
@@ -103,14 +106,15 @@ struct HomeView: View {
                     transaction.disablesAnimations = true
                 }
             }
-            
+
             .task {
                 await friendManagement.fetchFriends()
+                await fetchStats()
             }
             .onAppear {
                 requestPermissionsIfNeeded()
                 registerForPushNotifications()
-                
+
                 setupNotificationObserver()
             }
             .onDisappear {
@@ -177,6 +181,17 @@ struct HomeView: View {
                     self.showMatchRequestModal = true
                 }
             }
+        }
+    }
+
+    private func fetchStats() async {
+        do {
+            let stats = try await SupabaseService.shared.getMatchStats()
+            wins = stats.wins
+            losses = stats.losses
+            streak = stats.streak
+        } catch {
+            print("Error fetching stats: \(error)")
         }
     }
 }

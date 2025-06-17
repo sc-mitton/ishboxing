@@ -10,6 +10,12 @@ struct UsernameResponse: Codable {
     let username: String?
 }
 
+struct MatchResultResponse: Codable {
+    let winner: String
+    let loser: String
+    let created_at: String
+}
+
 class SupabaseService: ObservableObject {
     public let client: SupabaseClient
     private let decoder = JSONDecoder()
@@ -280,6 +286,39 @@ class SupabaseService: ObservableObject {
                 ], onConflict: "profile_id"
             )
             .execute()
+    }
+
+    func getMatchStats() async throws -> (wins: Int, losses: Int, streak: Int) {
+        let session = try await client.auth.session
+        let userId = session.user.id
+        let response = try await client.from("match_results")
+            .select("winner, loser, created_at")
+            .or("winner.eq.\(userId),loser.eq.\(userId)")
+            .order("created_at", ascending: true)
+            .execute()
+
+        let matches = try self.decoder.decode([MatchResultResponse].self, from: response.data)
+
+        var streak = 0
+        var wins = 0
+        var losses = 0
+
+        for match in matches {
+            if match.winner == userId.uuidString {
+                streak += 1
+            } else {
+                break
+            }
+        }
+
+        for match in matches {
+            if match.winner == userId.uuidString {
+                wins += 1
+            } else {
+                losses += 1
+            }
+        }
+        return (wins, losses, streak)
     }
 }
 
