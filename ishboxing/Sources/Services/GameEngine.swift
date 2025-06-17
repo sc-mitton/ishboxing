@@ -29,7 +29,7 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var round = 0
     // Format is [current user's dodges, opponent's dodges] for each round
     @Published public private(set) var roundResults: [[Int?]] = Array(
-        repeating: [nil, nil], count: 12)
+        repeating: [nil, nil], count: 11)
     @Published public private(set) var onOffense: Bool = false
     @Published public private(set) var fullScreenMessage: String?
     @Published public private(set) var bottomMessage: String?
@@ -75,6 +75,7 @@ final class GameEngine: ObservableObject {
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private let maxHistorySize = 10
+    private let maxRounds = 11
 
     public var oponentIsReady: Bool = false
     public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
@@ -120,6 +121,11 @@ final class GameEngine: ObservableObject {
     func onLocalPunchConnected() {
         // Update round
         round += 1
+
+        // Check if game is over
+        if round >= maxRounds {
+            isGameOver = true
+        }
 
         // Flip who is on offense
         onOffense = !onOffense

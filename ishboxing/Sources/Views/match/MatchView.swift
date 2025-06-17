@@ -187,6 +187,18 @@ struct MatchView: View {
                 )
             }
 
+            // Game Over Modal
+            if gameEngine.isGameOver {
+                GameOverModal(
+                    currentUserStreak: gameEngine.currentUserStreak,
+                    opposingUserStreak: gameEngine.opposingUserStreak,
+                    onDismiss: {
+                        viewModel.endMatch()
+                        dismiss()
+                    }
+                )
+            }
+
             // Round Results
             RoundResults(
                 roundResults: gameEngine.roundResults,
