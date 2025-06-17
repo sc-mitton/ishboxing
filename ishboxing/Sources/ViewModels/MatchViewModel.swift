@@ -10,10 +10,11 @@ class MatchViewModel: ObservableObject {
     public var gameEngine: GameEngine!
 
     @Published var errorMessage: String?
-    @Published var hasTimedOut = false
-    @Published var webRTCConnectionState: RTCIceConnectionState?
+    @Published var hasTimedOut: Bool = false
     @Published var isMuted = false
     @Published var showTimeoutAlert = false
+    @Published var webRTCSignalingState: RTCSignalingState?
+    @Published var webRTCConnectionState: RTCIceConnectionState?
 
     init(
         signalClient: SignalClient,
@@ -66,8 +67,13 @@ class MatchViewModel: ObservableObject {
 }
 
 extension MatchViewModel: SignalClientDelegate {
-    func signalClient(_ signalClient: SignalClient, didStateChange state: RTCIceConnectionState) {
-        debugPrint("didIceConnectionStateChange: \(state)")
+    func signalClient(
+        _ signalClient: SignalClient, didSignalingStateChange state: RTCSignalingState
+    ) {
+        debugPrint("didSignalingStateChange: \(state)")
+        DispatchQueue.main.async {
+            self.webRTCSignalingState = state
+        }
     }
 
     func signalClient(_ signalClient: SignalClient, didTimeout waitingForConnection: Bool) {
@@ -90,6 +96,14 @@ extension MatchViewModel: WebRTCClientDelegate {
         debugPrint("didChangeDataChannelState: \(state)")
         if state == .open {
             gameEngine.start()
+        }
+    }
+
+    func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
+    {
+        debugPrint("didChangeConnectionState: \(state)")
+        DispatchQueue.main.async {
+            self.webRTCConnectionState = state
         }
     }
 

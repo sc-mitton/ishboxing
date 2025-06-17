@@ -125,7 +125,7 @@ struct MatchView: View {
             }
 
             // Gesture overlay
-            if viewModel.webRTCConnectionState != .disconnected {
+            if viewModel.webRTCSignalingState == .stable {
                 GestureOverlay(
                     isEnabled: gameEngine.readyForOffense,
                     onSwipe: { point in

@@ -8,7 +8,7 @@ protocol SignalClientDelegate: AnyObject {
     func signalClient(
         _ signalClient: SignalClient, didError error: Error)
     func signalClient(
-        _ signalClient: SignalClient, didStateChange state: RTCIceConnectionState)
+        _ signalClient: SignalClient, didSignalingStateChange state: RTCSignalingState)
     func signalClient(
         _ signalClient: SignalClient, didCreateMatch match: Match)
 }
@@ -287,6 +287,7 @@ extension SignalClient: WebRTCClientSignalingDelegate {
     func webRTCClient(_ client: WebRTCClient, didChangeSignalingState state: RTCSignalingState) {
         self.flushQueuedCandidates()
         self.flushQueuedRemoteCandidates()
+        delegate?.signalClient(self, didSignalingStateChange: state)
     }
 }
 

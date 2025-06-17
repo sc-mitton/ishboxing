@@ -4,6 +4,7 @@ import WebRTC
 protocol WebRTCClientDelegate: AnyObject {
     func webRTCClient(_ client: WebRTCClient, didReceiveData data: Data)
     func webRTCClient(_ client: WebRTCClient, didChangeDataChannelState state: RTCDataChannelState)
+    func webRTCClient(_ client: WebRTCClient, didChangeConnectionState state: RTCIceConnectionState)
 }
 
 protocol WebRTCClientSignalingDelegate: AnyObject {
@@ -341,6 +342,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
             debugPrint(
                 "ICE connection checking - gathering state: \(peerConnection.iceGatheringState)")
         }
+        self.delegate?.webRTCClient(self, didChangeConnectionState: newState)
     }
 
     func peerConnection(
