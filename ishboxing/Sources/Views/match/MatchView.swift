@@ -57,6 +57,14 @@ struct MatchView: View {
                     .onAppear {
                         webRTCClient.renderRemoteVideo(to: remoteVideoView)
                     }
+                    .overlay(
+                        VideoBorderView(
+                            isLocal: false,
+                            punchConnected: gameEngine.remotePunchConnected,
+                            punchDodged: gameEngine.remotePunchDodged
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 24))
             } else {
                 // Placeholder while waiting for remote video
                 Rectangle()
@@ -71,17 +79,13 @@ struct MatchView: View {
                         .frame(width: 120, height: 160)
                         .cornerRadius(24)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .stroke(Color.ishBlue, lineWidth: 4)
+                            VideoBorderView(
+                                isLocal: true,
+                                punchConnected: gameEngine.localPunchConnected,
+                                punchDodged: gameEngine.localPunchDodged
+                            )
                         )
-
-                    if let observation = gameEngine.headPositionHistory.last {
-                        PoseAnnotation(
-                            headPose: observation,
-                            viewSize: CGSize(width: 120, height: 160)
-                        )
-                        .frame(width: 120, height: 160)
-                    }
+                        .clipShape(RoundedRectangle(cornerRadius: 24))
 
                     // Microphone button
                     Button(action: {
