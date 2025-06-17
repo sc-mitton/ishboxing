@@ -76,7 +76,6 @@ const sendMatchNotification = async (
     expiration: new Date(Date.now() + 30 * 1000), // 30 seconds
     topic: apnTopic,
   });
-  console.log("Notification: ", notification);
   await client.send(notification);
 };
 

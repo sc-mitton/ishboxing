@@ -6,6 +6,30 @@ struct RoundResults: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isExpanded = true
 
+    var currentUserStreak: Int {
+        var streak = 0
+        for i in (0..<currentRound).reversed() {
+            if let result = roundResults[i][1], result > 0 {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    var opposingUserStreak: Int {
+        var streak = 0
+        for i in (0..<currentRound).reversed() {
+            if let result = roundResults[i][0], result > 0 {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
     var body: some View {
         let isCompact = horizontalSizeClass == .compact
 

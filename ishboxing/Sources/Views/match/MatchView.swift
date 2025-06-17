@@ -17,6 +17,7 @@ struct MatchView: View {
     @State private var remoteVideoView: RTCMTLVideoView?
     @State private var hasRemoteVideoTrack = false
     @State private var match: Match?
+    @State private var currentUsername: String = ""
 
     init(friend: User, match: Match?, onDismiss: @escaping () -> Void) {
         self.friend = friend
@@ -81,7 +82,22 @@ struct MatchView: View {
                         )
                         .frame(width: 120, height: 160)
                     }
+
+                    // Microphone button
+                    Button(action: {
+                        if viewModel.isMuted {
+                            viewModel.unmuteAudio()
+                        } else {
+                            viewModel.muteAudio()
+                        }
+                    }) {
+                        Image(systemName: viewModel.isMuted ? "mic.slash.fill" : "mic.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.white)
+                    }
+                    .position(x: 100, y: 20)
                 }
+                .frame(width: 120, height: 160)
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
@@ -118,9 +134,32 @@ struct MatchView: View {
                 )
             }
 
-            // Overlay controls
-            MatchControlsView(viewModel: viewModel)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            // Score Display
+            ScoreDisplay(
+                currentUsername: currentUsername,
+                opposingUsername: friend.username ?? "",
+                currentUserStreak: gameEngine.currentUserStreak,
+                opposingUserStreak: gameEngine.opposingUserStreak
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.leading, 20)
+            .padding(.top, 20)
+
+            // Leave button
+            Button(action: { dismiss() }) {
+                Text("LEAVE ")
+                    .font(.bangers(size: 16))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+            }
+            .background(
+                Capsule()
+                    .fill(Color.ishRed)
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            .padding(.trailing, 20)
+            .padding(.bottom, 20)
 
             // Countdown overlay
             if let countdown = gameEngine.countdown {
@@ -149,6 +188,9 @@ struct MatchView: View {
         }
         .onAppear {
             setupVideoViews()
+            Task {
+                currentUsername = await supabaseService.getUser()?.username ?? ""
+            }
         }
     }
 

@@ -18,6 +18,17 @@ class SupabaseService: ObservableObject {
     static let serverURL = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String
     @Published var isAuthenticated = false
 
+    public func getUser() async -> User? {
+        do {
+            let session = try await client.auth.session
+            return User(
+                id: session.user.id,
+                username: session.user.userMetadata["username"]?.stringValue ?? "")
+        } catch {
+            return nil
+        }
+    }
+
     init() {
         guard let supabaseURL = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String,
             let supabaseKey = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY")
@@ -84,7 +95,7 @@ class SupabaseService: ObservableObject {
         )
     }
 
-    func haseUsername() async throws -> Bool {
+    func hasUsername() async throws -> Bool {
         do {
             let session = try await client.auth.session
             let userId = session.user.id
@@ -101,7 +112,7 @@ class SupabaseService: ObservableObject {
                 throw error
             }
         } catch {
-            debugPrint("Error in haseUsername: \(error)")
+            debugPrint("Error in hasUsername: \(error)")
             throw error
         }
     }

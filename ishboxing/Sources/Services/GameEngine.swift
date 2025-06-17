@@ -36,11 +36,40 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var isCountdownActive: Bool = false
     @Published public private(set) var isGameOver: Bool = false
     @Published public private(set) var headPositionHistory: [HeadPoseObservation] = []
+    @Published public private(set) var match: Match?
+
+    @Published public private(set) var localPunchConnected: Bool = false
+    @Published public private(set) var localPunchDodged: Bool = false
+    @Published public private(set) var remotePunchConnected: Bool = false
+    @Published public private(set) var remotePunchDodged: Bool = false
+
+    var currentUserStreak: Int {
+        var streak = 0
+        for i in (0..<round).reversed() {
+            if let result = roundResults[i][1], result > 0 {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    var opposingUserStreak: Int {
+        var streak = 0
+        for i in (0..<round).reversed() {
+            if let result = roundResults[i][0], result > 0 {
+                streak += 1
+            } else {
+                break
+            }
+        }
+        return streak
+    }
 
     private var waitingThrowResult: Bool = false
     private var webRTCClient: WebRTCClient
     private var supabaseService: SupabaseService
-    private var match: Match?
 
     private var countdownTimer: AnyCancellable?
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -96,6 +125,7 @@ final class GameEngine: ObservableObject {
         onOffense = !onOffense
 
         // Send punch connected message to opponent
+        debugPrint("onLocalPunchConnected")
         let payload = RTCDataPayload(type: "punchConnected", data: Data())
         let encodedPayload = try! JSONEncoder().encode(payload)
         webRTCClient.sendData(encodedPayload)
@@ -106,6 +136,7 @@ final class GameEngine: ObservableObject {
         roundResults[round][0] = (roundResults[round][0] ?? 0) + 1
 
         // Send punch dodged message to opponent
+        debugPrint("onLocalPunchDodged")
         let payload = RTCDataPayload(type: "punchDodged", data: Data())
         let encodedPayload = try! JSONEncoder().encode(payload)
         webRTCClient.sendData(encodedPayload)
@@ -118,6 +149,8 @@ final class GameEngine: ObservableObject {
         // Update round
         // Flip who is on offense
         onOffense = !onOffense
+
+        waitingThrowResult = false
     }
 
     func onRemotePunchDodged() {
@@ -149,13 +182,16 @@ final class GameEngine: ObservableObject {
         // Used at end of local swipe to have the swipe carry on momentum across the screen
 
         let lastPoint = localSwipePoints.last
+        let secondToLastPoint = localSwipePoints[localSwipePoints.count - 2]
+        let dx = lastPoint!.x - secondToLastPoint.x
+        let dy = lastPoint!.y - secondToLastPoint.y
 
         for i in 0..<1000 {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.001) {
                 self.localSwipePoints.append(
                     CGPoint(
-                        x: lastPoint!.x + 10,
-                        y: lastPoint!.y + 10
+                        x: lastPoint!.x + (dx * CGFloat(i)),
+                        y: lastPoint!.y + (dy * CGFloat(i))
                     ))
                 self.localSwipePoints.removeFirst()
             }
@@ -187,17 +223,24 @@ final class GameEngine: ObservableObject {
     }
 
     func handleThrown() {
+        debugPrint("handleThrown")
         // Handle thrown punch from opponent
         // A thrown punch is when the opponent's finger has lifted from the screen, which results
         // in a null swipe point being sent, indicating the end. The user then has a short window
         // to react.
 
         // Now we can use the dodge vector to determine if a punch was dodged
-        let dodgeVector = calculateDodgeVector()
         let throwVector = calculateThrowVector()
+        let dodgeVector = calculateDodgeVector()
 
-        // Calculate dot product of throw vector and dodge vector, if it's greater than 0.7, the punch connected
-        let dotProduct = throwVector.x * dodgeVector.dx + throwVector.y * dodgeVector.dy
+        // Calculate vectors from points
+        let throwDx = throwVector.end.x - throwVector.start.x
+        let throwDy = throwVector.end.y - throwVector.start.y
+        let dodgeDx = dodgeVector.end.x - dodgeVector.start.x
+        let dodgeDy = dodgeVector.end.y - dodgeVector.start.y
+
+        // Calculate dot product
+        let dotProduct = throwDx * dodgeDx + throwDy * dodgeDy
         if dotProduct > 0.7 {
             onLocalPunchConnected()
         } else {
@@ -284,8 +327,10 @@ final class GameEngine: ObservableObject {
             }
     }
 
-    private func calculateThrowVector() -> CGPoint {
-        guard headPositionHistory.count >= 2 else { return CGPoint(x: 0, y: 0) }
+    private func calculateThrowVector() -> (start: CGPoint, end: CGPoint) {
+        guard headPositionHistory.count >= 2 else {
+            return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
+        }
 
         // Calculate the average movement over the last few frames
         var totalDx: CGFloat = 0
@@ -299,15 +344,22 @@ final class GameEngine: ObservableObject {
             totalDy += current.keypoints[0].y - previous.keypoints[0].y
         }
 
-        // Normalize the vector
+        // Get the last position as the start point
+        let lastKeypoint = headPositionHistory.last!.keypoints[0]
+        let startPoint = CGPoint(x: lastKeypoint.x, y: lastKeypoint.y)
+
+        // Calculate the end point based on the average movement
         let dx = totalDx / count
         let dy = totalDy / count
+        let endPoint = CGPoint(x: startPoint.x + dx, y: startPoint.y + dy)
 
-        return CGPoint(x: dx, y: dy)
+        return (startPoint, endPoint)
     }
 
-    private func calculateDodgeVector() -> CGVector {
-        guard headPositionHistory.count >= 2 else { return CGVector(dx: 0, dy: 0) }
+    private func calculateDodgeVector() -> (start: CGPoint, end: CGPoint) {
+        guard headPositionHistory.count >= 2 else {
+            return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
+        }
 
         // Calculate the average movement over the last few frames
         var totalDx: CGFloat = 0
@@ -321,17 +373,22 @@ final class GameEngine: ObservableObject {
             totalDy += current.keypoints[0].y - previous.keypoints[0].y
         }
 
-        // Normalize the vector
+        // Get the last position as the start point
+        let lastKeypoint = headPositionHistory.last!.keypoints[0]
+        let startPoint = CGPoint(x: lastKeypoint.x, y: lastKeypoint.y)
+
+        // Calculate the end point based on the average movement
         let dx = totalDx / count
         let dy = totalDy / count
         let magnitude = sqrt(dx * dx + dy * dy)
 
         // Only return significant movements
         if magnitude > 0.05 {  // Threshold for significant movement
-            return CGVector(dx: dx, dy: dy)
+            let endPoint = CGPoint(x: startPoint.x + dx, y: startPoint.y + dy)
+            return (startPoint, endPoint)
         }
 
-        return CGVector(dx: 0, dy: 0)
+        return (startPoint, startPoint)  // Return same point if movement is insignificant
     }
 }
 
