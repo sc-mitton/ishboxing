@@ -146,7 +146,10 @@ struct MatchView: View {
             .padding(.top, 20)
 
             // Leave button
-            Button(action: { dismiss() }) {
+            Button(action: {
+                viewModel.endMatch()
+                dismiss()
+            }) {
                 Text("LEAVE ")
                     .font(.bangers(size: 16))
                     .foregroundColor(.white)
@@ -173,7 +176,10 @@ struct MatchView: View {
             if viewModel.webRTCConnectionState == .disconnected {
                 DisconnectedOverlay(
                     friendUsername: friend.username,
-                    onDismiss: { dismiss() }
+                    onDismiss: {
+                        viewModel.endMatch()
+                        dismiss()
+                    }
                 )
             }
 

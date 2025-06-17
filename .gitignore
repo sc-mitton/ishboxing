@@ -20,3 +20,5 @@ ml/**/test
 ml/**/runs
 ml/**/train
 ml/**/valid
+
+UserInterfaceState.xcuserstate

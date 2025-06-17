@@ -36,8 +36,8 @@ struct GlowingPath: View {
 
             // Create gradient stops for the stroke
             let gradient = Gradient(stops: [
-                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(1.0), location: 1),
                 .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.0), location: 0),
+                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(1.0), location: 1),
             ])
 
             // Draw the main stroke with gradient
@@ -57,8 +57,8 @@ struct GlowingPath: View {
 
             // Draw the glow effect with varying width
             let glowGradient = Gradient(stops: [
-                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.8), location: 1),
                 .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.0), location: 0),
+                .init(color: (isLocal ? Color.ishBlue : Color.red).opacity(0.8), location: 1),
             ])
 
             // Draw multiple strokes with decreasing width for the glow effect
