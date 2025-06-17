@@ -182,16 +182,16 @@ final class GameEngine: ObservableObject {
                 self.localSwipePoints.removeAll()
             }
             waitingThrowResult = true
-            speedUpLocalSwipe()
+            speedUp(points: &localSwipePoints)
         }
 
         sendSwipe(point: point)
     }
 
-    func speedUpLocalSwipe() {
+    func speedUp(points: inout [CGPoint]) {
         // Used at end of local swipe to have the swipe carry on momentum across the screen
 
-        let lastPoint = localSwipePoints.last
+        let lastPoint = points.last
         let secondToLastPoint = localSwipePoints[localSwipePoints.count - 2]
         let dx = lastPoint!.x - secondToLastPoint.x
         let dy = lastPoint!.y - secondToLastPoint.y
@@ -238,6 +238,7 @@ final class GameEngine: ObservableObject {
         // A thrown punch is when the opponent's finger has lifted from the screen, which results
         // in a null swipe point being sent, indicating the end. The user then has a short window
         // to react.
+        speedUp(points: &remoteSwipePoints)
 
         // Now we can use the dodge vector to determine if a punch was dodged
         let throwVector = calculateThrowVector()
