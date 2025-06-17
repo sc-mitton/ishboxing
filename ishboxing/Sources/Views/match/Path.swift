@@ -49,7 +49,7 @@ struct GlowingPath: View {
                     endPoint: points.last ?? points[0]
                 ),
                 style: StrokeStyle(
-                    lineWidth: 16,
+                    lineWidth: 24,
                     lineCap: .round,
                     lineJoin: .round
                 )
@@ -63,7 +63,7 @@ struct GlowingPath: View {
 
             // Draw multiple strokes with decreasing width for the glow effect
             for i in 0..<3 {
-                let width = 36.0 - Double(i * 4)
+                let width = 54.0 - Double(i * 4)
 
                 context.stroke(
                     path,

@@ -112,6 +112,18 @@ class SupabaseService: ObservableObject {
         )
     }
 
+    func hasMatchWaiting() async throws -> Bool {
+        let session = try await client.auth.session
+        let userId = session.user.id
+        let response = try await client.from("matches")
+            .select("id")
+            .eq("user_id", value: userId)
+            .eq("status", value: "pending")
+            .execute()
+
+        return response.data.count > 0
+    }
+
     func getFriends() async throws -> [User] {
         let session = try await client.auth.session
         let userId = session.user.id
@@ -254,7 +266,7 @@ class SupabaseService: ObservableObject {
                     "profile_id": userId.uuidString,
                     "token": token,
                     "device_id": deviceId,
-                ], onConflict: "profile_id,device_id"
+                ], onConflict: "profile_id"
             )
             .execute()
     }

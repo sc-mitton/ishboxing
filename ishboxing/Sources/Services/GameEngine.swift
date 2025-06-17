@@ -139,9 +139,27 @@ final class GameEngine: ObservableObject {
                 self.localSwipePoints.removeAll()
             }
             waitingThrowResult = true
+            speedUpLocalSwipe()
         }
 
         sendSwipe(point: point)
+    }
+
+    func speedUpLocalSwipe() {
+        // Used at end of local swipe to have the swipe carry on momentum across the screen
+
+        let lastPoint = localSwipePoints.last
+
+        for i in 0..<1000 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.001) {
+                self.localSwipePoints.append(
+                    CGPoint(
+                        x: lastPoint!.x + 10,
+                        y: lastPoint!.y + 10
+                    ))
+                self.localSwipePoints.removeFirst()
+            }
+        }
     }
 
     func remoteSwipe(point: CGPoint?) {
@@ -321,6 +339,11 @@ extension GameEngine: HeadPoseDetectionDelegate {
     func headPoseDetectionRenderer(
         _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation
     ) {
+        // Only update history if confidence is high enough
+        if headPose.confidence < 0.6 {
+            return
+        }
+
         // Update history
         headPositionHistory.append(headPose)
         if headPositionHistory.count > maxHistorySize {

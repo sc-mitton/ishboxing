@@ -76,6 +76,7 @@ const sendMatchNotification = async (
     expiration: new Date(Date.now() + 30 * 1000), // 30 seconds
     topic: apnTopic,
   });
+  console.log("Notification: ", notification);
   await client.send(notification);
 };
 
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
       challenger,
       challenged,
       { id: data.match_topic },
-      challenged.apn_tokens[0].token,
+      (challenged.apn_tokens as any).token,
     );
 
     return new Response(
@@ -131,6 +132,7 @@ Deno.serve(async (req) => {
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (error: unknown) {
+    console.error("Error: ", error);
     const errorMessage = error instanceof Error
       ? error.message
       : "An unknown error occurred";
