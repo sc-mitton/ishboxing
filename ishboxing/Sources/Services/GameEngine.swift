@@ -143,6 +143,8 @@ final class GameEngine: ObservableObject {
     }
 
     func onRemotePunchConnected() {
+        debugPrint("onRemotePunchConnected")
+
         // Update round results
         roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
 
@@ -154,6 +156,8 @@ final class GameEngine: ObservableObject {
     }
 
     func onRemotePunchDodged() {
+        debugPrint("onRemotePunchDodged")
+
         // Update round results
         roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
         waitingThrowResult = false
