@@ -182,17 +182,17 @@ final class GameEngine: ObservableObject {
                 self.localSwipePoints.removeAll()
             }
             waitingThrowResult = true
-            speedUp(points: &localSwipePoints)
+            speedUpLocalPoints()
         }
 
         sendSwipe(point: point)
     }
 
-    func speedUp(points: inout [CGPoint]) {
+    func speedUpLocalPoints() {
         // Used at end of local swipe to have the swipe carry on momentum across the screen
 
-        let lastPoint = points.last
-        let secondToLastPoint = localSwipePoints[localSwipePoints.count - 2]
+        let lastPoint = self.localSwipePoints.last
+        let secondToLastPoint = self.localSwipePoints[localSwipePoints.count - 2]
         let dx = lastPoint!.x - secondToLastPoint.x
         let dy = lastPoint!.y - secondToLastPoint.y
 
@@ -204,6 +204,26 @@ final class GameEngine: ObservableObject {
                         y: lastPoint!.y + (dy * CGFloat(i))
                     ))
                 self.localSwipePoints.removeFirst()
+            }
+        }
+    }
+
+    func speedUpRemotePoints() {
+        // Used at end of remote swipe to have the swipe carry on momentum across the screen
+
+        let lastPoint = self.remoteSwipePoints.last
+        let secondToLastPoint = self.remoteSwipePoints[remoteSwipePoints.count - 2]
+        let dx = lastPoint!.x - secondToLastPoint.x
+        let dy = lastPoint!.y - secondToLastPoint.y
+
+        for i in 0..<1000 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.001) {
+                self.remoteSwipePoints.append(
+                    CGPoint(
+                        x: lastPoint!.x + (dx * CGFloat(i)),
+                        y: lastPoint!.y + (dy * CGFloat(i))
+                    ))
+                self.remoteSwipePoints.removeFirst()
             }
         }
     }
@@ -226,6 +246,7 @@ final class GameEngine: ObservableObject {
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
                 self.remoteSwipePoints.removeAll()
             }
+            speedUpRemotePoints()
             DispatchQueue.main.asyncAfter(deadline: .now() + REACTION_CUTOFF_TIME) {
                 self.handleThrown()
             }
@@ -238,7 +259,6 @@ final class GameEngine: ObservableObject {
         // A thrown punch is when the opponent's finger has lifted from the screen, which results
         // in a null swipe point being sent, indicating the end. The user then has a short window
         // to react.
-        speedUp(points: &remoteSwipePoints)
 
         // Now we can use the dodge vector to determine if a punch was dodged
         let throwVector = calculateThrowVector()

@@ -36,7 +36,7 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     // Stats section
                     VStack(spacing: 20) {
-                        Text("Ish Boxing ")
+                        Text(" Ish Boxing ")
                             .font(.bangers(size: Text.mainTitle()))
                             .foregroundColor(.white)
                             .padding(.top, 16)

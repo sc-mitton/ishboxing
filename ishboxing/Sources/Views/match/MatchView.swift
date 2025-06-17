@@ -86,6 +86,10 @@ struct MatchView: View {
                             )
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 24))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(Color.ishBlue, lineWidth: 4)
+                        )
 
                     // Microphone button
                     Button(action: {

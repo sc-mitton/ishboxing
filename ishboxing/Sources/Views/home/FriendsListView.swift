@@ -69,7 +69,7 @@ private struct FriendsListContent: View {
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemGray6))
+            .background(Color(Color.clear))
             .refreshable {
                 Task {
                     await friendManagement.fetchFriends()
@@ -85,7 +85,7 @@ private struct FriendsListContent: View {
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemGray6))
+            .background(Color(Color.clear))
             .refreshable {
                 Task {
                     await friendManagement.fetchFriends()
@@ -112,11 +112,13 @@ private struct FriendsListContent: View {
                         )
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                        .listRowSeparator(.visible, edges: .bottom)
+                        .listRowSeparatorTint(Color.gray.opacity(0.3))
                     }
                 }
             }
             .listStyle(PlainListStyle())
-            .background(Color(.systemGray6))
+            .background(Color(Color.clear))
             .refreshable {
                 Task {
                     await friendManagement.fetchFriends()
@@ -179,7 +181,7 @@ private struct FriendListItem: View {
             }
         }
         .padding()
-        .background(Color(.systemGray3).opacity(0.2))
+        .background(Color(Color.clear))
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 Task {
