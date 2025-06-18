@@ -81,33 +81,41 @@ const sendMatchNotification = async (
 
 Deno.serve(async (req) => {
   try {
-    const { data } = await req.json() as { data: MatchUser };
+    const { data: challengedMatchUser } = await req.json() as {
+      data: MatchUser;
+    };
 
-    if (!data.is_challenged) {
+    if (!challengedMatchUser.is_challenged) {
       return new Response(JSON.stringify({ error: "User is not challenged" }), {
         status: 200,
       });
     }
 
     // Query for owner of match
-    const { data: match } = await privilegedSupabaseClient.from(
+    const { data: challengerMatchUser } = await privilegedSupabaseClient.from(
       "match_users",
     ).select("profile_id")
-      .eq("match_topic", data.match_topic)
+      .eq("match_topic", challengedMatchUser.match_topic)
       .eq("is_challenger", true)
       .single()
       .throwOnError();
 
-    if (!match) {
-      return new Response(JSON.stringify({ error: "Match not found" }), {
-        status: 404,
-      });
+    if (!challengerMatchUser) {
+      return new Response(
+        JSON.stringify({ error: "Challenger match user not found" }),
+        {
+          status: 404,
+        },
+      );
     }
 
     // Query for the challenger and challenged to get their user name and the apn token of the challenged user
     const { data: users } = await privilegedSupabaseClient.from("profiles")
       .select("id, username, apn_tokens(token)")
-      .in("id", [match.profile_id, data.profile_id])
+      .in("id", [
+        challengerMatchUser.profile_id,
+        challengedMatchUser.profile_id,
+      ])
       .throwOnError();
 
     if (!users || users.length !== 2) {
@@ -116,18 +124,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    const [challenger, challenged] = users;
+    const challenger = users.find((user) =>
+      user.id === challengerMatchUser.profile_id
+    );
+    const challenged = users.find((user) =>
+      user.id === challengedMatchUser.profile_id
+    );
 
     // Notify the challenged user
     await sendMatchNotification(
-      challenger,
-      challenged,
-      { id: data.match_topic },
-      (challenged.apn_tokens as any).token,
+      challenger!,
+      challenged!,
+      { id: challengedMatchUser.match_topic },
+      (challenged?.apn_tokens as any).token,
     );
 
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({
+        message: "Notification sent",
+      }),
       { headers: { "Content-Type": "application/json" } },
     );
   } catch (error: unknown) {
