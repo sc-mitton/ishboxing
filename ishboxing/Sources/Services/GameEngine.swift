@@ -298,12 +298,28 @@ final class GameEngine: ObservableObject {
         let dodgeDx = dodgeVector.end.x - dodgeVector.start.x
         let dodgeDy = dodgeVector.end.y - dodgeVector.start.y
 
-        // Calculate dot product
+        // Normalize the vectors
+        let throwMagnitude = sqrt(throwDx * throwDx + throwDy * throwDy)
+        let dodgeMagnitude = sqrt(dodgeDx * dodgeDx + dodgeDy * dodgeDy)
+
+        let normalizedThrowDx = throwDx / throwMagnitude
+        let normalizedThrowDy = throwDy / throwMagnitude
+        let normalizedDodgeDx = dodgeDx / dodgeMagnitude
+        let normalizedDodgeDy = dodgeDy / dodgeMagnitude
+
+        // Calculate dot product of normalized vectors
+        let dotProduct =
+            normalizedThrowDx * normalizedDodgeDx + normalizedThrowDy * normalizedDodgeDy
+
         debugPrint("throwDx: \(throwDx), throwDy: \(throwDy)")
         debugPrint("dodgeDx: \(dodgeDx), dodgeDy: \(dodgeDy)")
-        let dotProduct = throwDx * dodgeDx + throwDy * dodgeDy
+        debugPrint(
+            "normalizedThrowDx: \(normalizedThrowDx), normalizedThrowDy: \(normalizedThrowDy)")
+        debugPrint(
+            "normalizedDodgeDx: \(normalizedDodgeDx), normalizedDodgeDy: \(normalizedDodgeDy)")
         debugPrint("dotProduct: \(dotProduct)")
-        if dotProduct > 0.7 {
+
+        if dotProduct > DOT_PRODUCT_THRESHOLD {
             // Punch connected
             DispatchQueue.main.async {
                 self.localPunchConnected = true
@@ -404,32 +420,16 @@ final class GameEngine: ObservableObject {
     }
 
     private func calculateThrowVector() -> (start: CGPoint, end: CGPoint) {
-        guard headPositionHistory.count >= 2 else {
+        guard remoteSwipePoints.count >= 2 else {
             return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
         }
 
-        // Calculate the average movement over the last few frames
-        var totalDx: CGFloat = 0
-        var totalDy: CGFloat = 0
-        let count = CGFloat(headPositionHistory.count - 1)
+        // Get the last two points from the remote swipe
+        let lastPoint = remoteSwipePoints.last!
+        let secondToLastPoint = remoteSwipePoints[remoteSwipePoints.count - 2]
 
-        for i in 1..<headPositionHistory.count {
-            let current = headPositionHistory[i]
-            let previous = headPositionHistory[i - 1]
-            totalDx += current.keypoints[0].x - previous.keypoints[0].x
-            totalDy += current.keypoints[0].y - previous.keypoints[0].y
-        }
-
-        // Get the last position as the start point
-        let lastKeypoint = headPositionHistory.last!.keypoints[0]
-        let startPoint = CGPoint(x: lastKeypoint.x, y: lastKeypoint.y)
-
-        // Calculate the end point based on the average movement
-        let dx = totalDx / count
-        let dy = totalDy / count
-        let endPoint = CGPoint(x: startPoint.x + dx, y: startPoint.y + dy)
-
-        return (startPoint, endPoint)
+        // Return the start and end points of the throw vector
+        return (secondToLastPoint, lastPoint)
     }
 
     private func calculateDodgeVector() -> (start: CGPoint, end: CGPoint) {
@@ -437,34 +437,27 @@ final class GameEngine: ObservableObject {
             return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
         }
 
-        // Calculate the average movement over the last few frames
-        var totalDx: CGFloat = 0
-        var totalDy: CGFloat = 0
-        let count = CGFloat(headPositionHistory.count - 1)
+        // Get the last two head positions
+        let lastPosition = headPositionHistory.last!.keypoints[0]
+        let secondToLastPosition = headPositionHistory[headPositionHistory.count - 2].keypoints[0]
 
-        for i in 1..<headPositionHistory.count {
-            let current = headPositionHistory[i]
-            let previous = headPositionHistory[i - 1]
-            totalDx += current.keypoints[0].x - previous.keypoints[0].x
-            totalDy += current.keypoints[0].y - previous.keypoints[0].y
-        }
-
-        // Get the last position as the start point
-        let lastKeypoint = headPositionHistory.last!.keypoints[0]
-        let startPoint = CGPoint(x: lastKeypoint.x, y: lastKeypoint.y)
-
-        // Calculate the end point based on the average movement
-        let dx = totalDx / count
-        let dy = totalDy / count
-        let magnitude = sqrt(dx * dx + dy * dy)
+        // Calculate the vector from the second to last position to the last position
+        let dx = lastPosition.x - secondToLastPosition.x
+        let dy = lastPosition.y - secondToLastPosition.y
 
         // Only return significant movements
+        let magnitude = sqrt(dx * dx + dy * dy)
         if magnitude > 0.05 {  // Threshold for significant movement
-            let endPoint = CGPoint(x: startPoint.x + dx, y: startPoint.y + dy)
-            return (startPoint, endPoint)
+            return (
+                CGPoint(x: secondToLastPosition.x, y: secondToLastPosition.y),
+                CGPoint(x: lastPosition.x, y: lastPosition.y)
+            )
         }
 
-        return (startPoint, startPoint)  // Return same point if movement is insignificant
+        return (
+            CGPoint(x: lastPosition.x, y: lastPosition.y),
+            CGPoint(x: lastPosition.x, y: lastPosition.y)
+        )  // Return same point if movement is insignificant
     }
 }
 
