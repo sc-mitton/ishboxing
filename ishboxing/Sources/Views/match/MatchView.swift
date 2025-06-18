@@ -176,7 +176,7 @@ struct MatchView: View {
                     // Turn indicator
                     Text(
                         gameEngine.readyForOffense
-                            ? "YOUR TURN" : "\(friend.username ?? "OPPONENT")'S TURN "
+                            ? "YOUR TURN " : "\(friend.username ?? "OPPONENT")'S TURN "
                     )
                     .font(.bangers(size: 24))
                     .foregroundColor(.white)

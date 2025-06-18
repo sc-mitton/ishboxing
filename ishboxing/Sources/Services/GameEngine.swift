@@ -174,7 +174,6 @@ final class GameEngine: ObservableObject {
 
         // Update round results
         DispatchQueue.main.async {
-            self.roundResults[self.round[0]][1] = (self.roundResults[self.round[0]][1] ?? 0) + 1
             self.remotePunchConnected = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
