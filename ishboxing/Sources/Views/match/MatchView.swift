@@ -156,15 +156,6 @@ struct MatchView: View {
 
             // Bottom row container
             ZStack(alignment: .bottom) {
-                // Round Results (positioned absolutely)
-                RoundResults(
-                    roundResults: gameEngine.roundResults,
-                    currentRound: gameEngine.round
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .padding(.leading, 20)
-                .padding(.bottom, 20)
-
                 // Fixed bottom row
                 HStack(spacing: 20) {
                     // Placeholder for Round Results to maintain spacing
@@ -203,6 +194,16 @@ struct MatchView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
+
+                // Round Results (positioned on top)
+                RoundResults(
+                    roundResults: gameEngine.roundResults,
+                    currentRound: gameEngine.round
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(.leading, 20)
+                .padding(.bottom, 20)
+                .zIndex(1)  // Ensure it's on top
             }
 
             // Countdown overlay

@@ -85,7 +85,7 @@ struct RoundResults: View {
             }
         }
         .padding()
-        .background(Color.black.opacity(0.5))
+        .background(.ultraThinMaterial)
         .cornerRadius(20)
         .onAppear {
             // Auto-close after 5 seconds
