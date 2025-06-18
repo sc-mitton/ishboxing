@@ -91,6 +91,11 @@ struct MatchView: View {
                                 .stroke(Color.ishBlue, lineWidth: 4)
                         )
 
+                    if let headPose = gameEngine.headPositionHistory.last {
+                        PoseAnnotation(
+                            headPose: headPose, viewSize: CGSize(width: 120, height: 160))
+                    }
+
                     // Microphone button
                     Button(action: {
                         if viewModel.isMuted {

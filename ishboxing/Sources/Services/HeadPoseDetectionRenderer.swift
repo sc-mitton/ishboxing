@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import WebRTC
 
-class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
+class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer, ObservableObject {
     private let headPoseDetectionService: HeadPoseDetectionService
     private let ciContext = CIContext(options: [CIContextOption.cacheIntermediates: false])
     weak var delegate: HeadPoseDetectionDelegate?
@@ -71,6 +71,21 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
         let pixelBuffer = buffer.pixelBuffer
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
 
+        let rotation: CGFloat
+
+        switch UIDevice.current.orientation {
+        case .portrait:
+            rotation = -0.5 * CGFloat.pi
+        case .portraitUpsideDown:
+            rotation = -0.5 * CGFloat.pi
+        case .landscapeLeft:
+            rotation = 1.0 * CGFloat.pi
+        case .landscapeRight:
+            rotation = 0.0 * CGFloat.pi
+        default:
+            rotation = 0.0 * CGFloat.pi
+        }
+
         let targetSize = CGSize(width: 640, height: 640)
         let scaleX = targetSize.width / ciImage.extent.width
         let scaleY = targetSize.height / ciImage.extent.height
@@ -78,7 +93,7 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer {
             ciImage
             .cropped(to: ciImage.extent)
             .transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-            .transformed(by: CGAffineTransform(rotationAngle: -0.5 * .pi))
+            .transformed(by: CGAffineTransform(rotationAngle: rotation))
 
         guard
             let cgImage = ciContext.createCGImage(
