@@ -76,6 +76,7 @@ final class GameEngine: ObservableObject {
 
     private let maxHistorySize = 10
     private let maxRounds = 11
+    private var isGatheringDodgeVector: Bool = false
 
     public var oponentIsReady: Bool = false
     public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
@@ -248,7 +249,7 @@ final class GameEngine: ObservableObject {
         }
     }
 
-    func speedUpRemotePoints() {
+    func speedUpRemotePoints(onComplete: @escaping () -> Void) {
         // Used at end of remote swipe to have the swipe carry on momentum across the screen
 
         let lastPoint = self.remoteSwipePoints.last
@@ -256,8 +257,8 @@ final class GameEngine: ObservableObject {
         let dx = lastPoint!.x - secondToLastPoint.x
         let dy = lastPoint!.y - secondToLastPoint.y
 
-        for i in 0..<1000 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.001) {
+        for i in 0..<100 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.003) {
                 self.remoteSwipePoints.append(
                     CGPoint(
                         x: lastPoint!.x + (dx * CGFloat(i)),
@@ -265,6 +266,9 @@ final class GameEngine: ObservableObject {
                     ))
                 self.remoteSwipePoints.removeFirst()
             }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            onComplete()
         }
     }
 
@@ -287,8 +291,11 @@ final class GameEngine: ObservableObject {
             // nil indicates end of throw
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
                 self.remoteSwipePoints.removeAll()
+                self.isGatheringDodgeVector = false
             }
-            speedUpRemotePoints()
+            speedUpRemotePoints {
+                self.isGatheringDodgeVector = true
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + REACTION_CUTOFF_TIME) {
                 self.handleThrown()
             }
@@ -306,37 +313,12 @@ final class GameEngine: ObservableObject {
         let throwVector = calculateThrowVector()
         let dodgeVector = calculateDodgeVector()
 
-        // Calculate vectors from points
-        let throwDx = throwVector.end.x - throwVector.start.x
-        let throwDy = throwVector.end.y - throwVector.start.y
-        let dodgeDx = dodgeVector.end.x - dodgeVector.start.x
-        let dodgeDy = dodgeVector.end.y - dodgeVector.start.y
-
-        // Normalize the vectors
-        let throwMagnitude = sqrt(throwDx * throwDx + throwDy * throwDy)
-        let dodgeMagnitude = sqrt(dodgeDx * dodgeDx + dodgeDy * dodgeDy)
-
-        let normalizedThrowDx = throwDx / throwMagnitude
-        let normalizedThrowDy = throwDy / throwMagnitude
-        let normalizedDodgeDx = dodgeDx / dodgeMagnitude
-        let normalizedDodgeDy = dodgeDy / dodgeMagnitude
-
         // Calculate dot product of normalized vectors
-        let dotProduct =
-            normalizedThrowDx * normalizedDodgeDx + normalizedThrowDy * normalizedDodgeDy
+        let dotProduct = throwVector.x * dodgeVector.x + throwVector.y * dodgeVector.y
 
-        // Print out the head position history
-        debugPrint(
-            "headPositionHistory: \(headPositionHistory.map { "[\($0.boundingBox.minX), \($0.boundingBox.minY)]" }.joined(separator: ", "))"
-        )
-
-        debugPrint("throwDx: \(throwDx), throwDy: \(throwDy)")
-        debugPrint("dodgeDx: \(dodgeDx), dodgeDy: \(dodgeDy)")
-        debugPrint(
-            "normalizedThrowDx: \(normalizedThrowDx), normalizedThrowDy: \(normalizedThrowDy)")
-        debugPrint(
-            "normalizedDodgeDx: \(normalizedDodgeDx), normalizedDodgeDy: \(normalizedDodgeDy)")
         debugPrint("dotProduct: \(dotProduct)")
+        debugPrint("throwVector: \(throwVector)")
+        debugPrint("dodgeVector: \(dodgeVector)")
 
         if dotProduct > DOT_PRODUCT_THRESHOLD {
             // Punch connected
@@ -438,49 +420,55 @@ final class GameEngine: ObservableObject {
             }
     }
 
-    private func calculateThrowVector() -> (start: CGPoint, end: CGPoint) {
-        debugPrint("number of remote swipe points: \(remoteSwipePoints.count)")
+    private func calculateThrowVector() -> CGPoint {
         guard remoteSwipePoints.count >= 2 else {
-            return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
+            return CGPoint(x: 0, y: 0)
         }
 
         // Get the last two points from the remote swipe
         let lastPoint = remoteSwipePoints.last!
         let secondToLastPoint = remoteSwipePoints[remoteSwipePoints.count - 2]
 
-        // Return the start and end points of the throw vector
-        return (secondToLastPoint, lastPoint)
+        // Calculate vector components
+        let dx = lastPoint.x - secondToLastPoint.x
+        let dy = lastPoint.y - secondToLastPoint.y
+
+        // Calculate magnitude
+        let magnitude = sqrt(dx * dx + dy * dy)
+
+        // Return normalized vector
+        return CGPoint(x: dx / magnitude, y: dy / magnitude)
     }
 
-    private func calculateDodgeVector() -> (start: CGPoint, end: CGPoint) {
+    private func calculateDodgeVector() -> CGPoint {
         guard headPositionHistory.count >= 2 else {
-            return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
+            return CGPoint(x: 0, y: 0)
         }
 
         // Get the last two head positions using bounding box centers
         let lastBox = headPositionHistory.last!.boundingBox
         let recentBox = headPositionHistory.first!.boundingBox
 
-        let lastCenter = CGPoint(x: lastBox.midX, y: lastBox.midY)
-        let recentCenter = CGPoint(x: recentBox.midX, y: recentBox.midY)
+        // Convert from detection space to normalized coordinates (0-1)
+        // Flip x coordinate to match mirrored video view
+        let lastCenter = CGPoint(
+            x: 1.0 - (lastBox.midX / Constants.HeadPoseDetection.targetSize),  // Flip x coordinate
+            y: lastBox.midY / Constants.HeadPoseDetection.targetSize
+        )
+        let recentCenter = CGPoint(
+            x: 1.0 - (recentBox.midX / Constants.HeadPoseDetection.targetSize),  // Flip x coordinate
+            y: recentBox.midY / Constants.HeadPoseDetection.targetSize
+        )
 
         // Calculate the vector from the second to last position to the last position
         let dx = lastCenter.x - recentCenter.x
         let dy = lastCenter.y - recentCenter.y
 
-        // Only return significant movements
+        // Calculate magnitude of the vector
         let magnitude = sqrt(dx * dx + dy * dy)
-        if magnitude > 0.05 {  // Threshold for significant movement
-            return (
-                CGPoint(x: recentCenter.x, y: recentCenter.y),
-                CGPoint(x: lastCenter.x, y: lastCenter.y)
-            )
-        }
 
-        return (
-            CGPoint(x: lastCenter.x, y: lastCenter.y),
-            CGPoint(x: lastCenter.x, y: lastCenter.y)
-        )  // Return same point if movement is insignificant
+        // Return normalized vector as start and end points
+        return CGPoint(x: dx / magnitude, y: dy / magnitude)
     }
 }
 
@@ -489,7 +477,28 @@ extension GameEngine: HeadPoseDetectionDelegate {
         _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation
     ) {
         // Update history
-        headPositionHistory.append(headPose)
+        if self.isGatheringDodgeVector {
+            // Only append if dx vector direction is same as the vector for whole history
+            // with the exception of when the magnitude of the history vector is close to 0 (< 0.05)
+            // This is because:
+            // 1. There might be small perturbations in the vector due to noise at the beginning of the gathering stage
+            // 2. When the head dodges, the head always returns to the resting position, and we don't want to accidentally
+            // gather any data from the return motion
+            let historyVector = calculateDodgeVector()
+
+            let historyMagnitude = sqrt(
+                historyVector.x * historyVector.x + historyVector.y * historyVector.y)
+
+            let dx = headPose.boundingBox.midX - headPositionHistory.last!.boundingBox.midX
+            let dxMagnitude = sqrt(dx * dx)
+            let dxNorm = dx / dxMagnitude
+
+            if historyMagnitude > 0.05 && (historyMagnitude.sign == dxNorm.sign) {
+                headPositionHistory.append(headPose)
+            }
+        } else {
+            headPositionHistory.append(headPose)
+        }
         if headPositionHistory.count > maxHistorySize {
             headPositionHistory.removeFirst()
         }

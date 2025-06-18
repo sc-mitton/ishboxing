@@ -2,6 +2,9 @@ import Foundation
 import UIKit
 import WebRTC
 
+// Import Constants
+@_exported import struct Foundation.CGFloat
+
 class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer, ObservableObject {
     private let headPoseDetectionService: HeadPoseDetectionService
     private let ciContext = CIContext(options: [CIContextOption.cacheIntermediates: false])
@@ -86,7 +89,9 @@ class HeadPoseDetectionRenderer: NSObject, RTCVideoRenderer, ObservableObject {
             rotation = 0.0 * CGFloat.pi
         }
 
-        let targetSize = CGSize(width: 640, height: 640)
+        let targetSize = CGSize(
+            width: Constants.HeadPoseDetection.targetSize,
+            height: Constants.HeadPoseDetection.targetSize)
         let scaleX = targetSize.width / ciImage.extent.width
         let scaleY = targetSize.height / ciImage.extent.height
         let scaledRotatedImage =
