@@ -200,7 +200,7 @@ final class GameEngine: ObservableObject {
                 }
                 self.smoothPoints(points: &self.localSwipePoints, windowSize: 5)
             }
-        } else {
+        } else if self.localSwipePoints.count > 5 {
             // nil indicates end of throw
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
                 self.localSwipePoints.removeAll()
