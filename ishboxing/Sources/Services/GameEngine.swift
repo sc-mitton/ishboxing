@@ -485,11 +485,6 @@ extension GameEngine: HeadPoseDetectionDelegate {
     func headPoseDetectionRenderer(
         _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation
     ) {
-        // Only update history if confidence is high enough
-        if headPose.confidence < 0.6 {
-            return
-        }
-
         // Update history
         headPositionHistory.append(headPose)
         if headPositionHistory.count > maxHistorySize {
