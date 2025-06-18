@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS apn_tokens (
     device_id TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(token)
+    UNIQUE(token),
+    UNIQUE(profile_id)
 );
 
 -- Add unique constraint for profile_id and device_id combination

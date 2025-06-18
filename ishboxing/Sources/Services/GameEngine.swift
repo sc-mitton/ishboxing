@@ -3,10 +3,10 @@ import Foundation
 import WebRTC
 
 let MAX_SWIPE_POINTS = 40
-let POINTS_CLEAR_DELAY: TimeInterval = 0.5
+let POINTS_CLEAR_DELAY: TimeInterval = 1.5
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
 let MAX_HEAD_POSE_HISTORY_SIZE = 5
-let REACTION_CUTOFF_TIME: TimeInterval = 0.25
+let REACTION_CUTOFF_TIME: TimeInterval = 0.5
 
 enum DragState {
     case idle
@@ -326,7 +326,9 @@ final class GameEngine: ObservableObject {
             normalizedThrowDx * normalizedDodgeDx + normalizedThrowDy * normalizedDodgeDy
 
         // Print out the head position history
-        debugPrint("headPositionHistory: \(headPositionHistory)")
+        debugPrint(
+            "headPositionHistory: \(headPositionHistory.map { "[\($0.boundingBox.minX), \($0.boundingBox.minY)]" }.joined(separator: ", "))"
+        )
 
         debugPrint("throwDx: \(throwDx), throwDy: \(throwDy)")
         debugPrint("dodgeDx: \(dodgeDx), dodgeDy: \(dodgeDy)")
@@ -437,6 +439,7 @@ final class GameEngine: ObservableObject {
     }
 
     private func calculateThrowVector() -> (start: CGPoint, end: CGPoint) {
+        debugPrint("number of remote swipe points: \(remoteSwipePoints.count)")
         guard remoteSwipePoints.count >= 2 else {
             return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
         }
