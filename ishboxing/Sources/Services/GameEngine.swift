@@ -5,7 +5,7 @@ import WebRTC
 let MAX_SWIPE_POINTS = 40
 let POINTS_CLEAR_DELAY: TimeInterval = 0.5
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
-let MAX_HEAD_POSE_HISTORY_SIZE = 20
+let MAX_HEAD_POSE_HISTORY_SIZE = 5
 let REACTION_CUTOFF_TIME: TimeInterval = 0.25
 
 enum DragState {

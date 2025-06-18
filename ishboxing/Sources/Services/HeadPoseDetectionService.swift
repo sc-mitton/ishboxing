@@ -70,6 +70,10 @@ class HeadPoseDetectionService {
     private func processCoreMLFeatureValue(_ observation: VNCoreMLFeatureValueObservation)
         -> HeadPoseObservation
     {
+        // The observation result is shaped 1 x 23 x 8440
+        // 6 keypoints x 3 values (x, y, confidence) = 18 + 5 for the bounding box (x, y, width, height, confidence) = 23
+        // We need to extract the keypoints from the observation to the proper shape
+
         let featureValue = observation.featureValue
         guard let multiArray = featureValue.multiArrayValue else {
             return HeadPoseObservation(keypoints: [], confidence: 0.0, boundingBox: .zero)
