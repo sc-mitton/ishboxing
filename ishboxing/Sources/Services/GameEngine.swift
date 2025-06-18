@@ -325,6 +325,9 @@ final class GameEngine: ObservableObject {
         let dotProduct =
             normalizedThrowDx * normalizedDodgeDx + normalizedThrowDy * normalizedDodgeDy
 
+        // Print out the head position history
+        debugPrint("headPositionHistory: \(headPositionHistory)")
+
         debugPrint("throwDx: \(throwDx), throwDy: \(throwDy)")
         debugPrint("dodgeDx: \(dodgeDx), dodgeDy: \(dodgeDy)")
         debugPrint(
@@ -451,26 +454,29 @@ final class GameEngine: ObservableObject {
             return (CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 0))
         }
 
-        // Get the last two head positions
-        let lastPosition = headPositionHistory.last!.keypoints[0]
-        let secondToLastPosition = headPositionHistory[headPositionHistory.count - 2].keypoints[0]
+        // Get the last two head positions using bounding box centers
+        let lastBox = headPositionHistory.last!.boundingBox
+        let recentBox = headPositionHistory.first!.boundingBox
+
+        let lastCenter = CGPoint(x: lastBox.midX, y: lastBox.midY)
+        let recentCenter = CGPoint(x: recentBox.midX, y: recentBox.midY)
 
         // Calculate the vector from the second to last position to the last position
-        let dx = lastPosition.x - secondToLastPosition.x
-        let dy = lastPosition.y - secondToLastPosition.y
+        let dx = lastCenter.x - recentCenter.x
+        let dy = lastCenter.y - recentCenter.y
 
         // Only return significant movements
         let magnitude = sqrt(dx * dx + dy * dy)
         if magnitude > 0.05 {  // Threshold for significant movement
             return (
-                CGPoint(x: secondToLastPosition.x, y: secondToLastPosition.y),
-                CGPoint(x: lastPosition.x, y: lastPosition.y)
+                CGPoint(x: recentCenter.x, y: recentCenter.y),
+                CGPoint(x: lastCenter.x, y: lastCenter.y)
             )
         }
 
         return (
-            CGPoint(x: lastPosition.x, y: lastPosition.y),
-            CGPoint(x: lastPosition.x, y: lastPosition.y)
+            CGPoint(x: lastCenter.x, y: lastCenter.y),
+            CGPoint(x: lastCenter.x, y: lastCenter.y)
         )  // Return same point if movement is insignificant
     }
 }
