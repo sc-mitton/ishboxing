@@ -3,15 +3,15 @@ import SwiftUI
 struct ScoreDisplay: View {
     let currentUsername: String
     let opposingUsername: String
-    let currentUserStreak: Int
-    let opposingUserStreak: Int
+    let currentUserDodges: Int
+    let opposingUserDodges: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("\(currentUsername): \(currentUserStreak) ")
+            Text("\(currentUsername): \(currentUserDodges) ")
                 .font(.bangers(size: 24))
                 .foregroundColor(.white)
-            Text("\(opposingUsername): \(opposingUserStreak) ")
+            Text("\(opposingUsername): \(opposingUserDodges) ")
                 .font(.bangers(size: 24))
                 .foregroundColor(.white)
         }
@@ -23,7 +23,7 @@ struct ScoreDisplay: View {
     ScoreDisplay(
         currentUsername: "Player 1",
         opposingUsername: "Player 2",
-        currentUserStreak: 3,
-        opposingUserStreak: 1
+        currentUserDodges: 2,
+        opposingUserDodges: 1
     )
 }

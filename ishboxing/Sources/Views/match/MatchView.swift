@@ -59,7 +59,7 @@ struct MatchView: View {
                     }
                     .overlay(
                         VideoBorderView(
-                            isLocal: false,
+                            borderSize: 44,
                             punchConnected: gameEngine.remotePunchConnected,
                             punchDodged: gameEngine.remotePunchDodged
                         )
@@ -80,7 +80,7 @@ struct MatchView: View {
                         .cornerRadius(24)
                         .overlay(
                             VideoBorderView(
-                                isLocal: true,
+                                borderSize: 20,
                                 punchConnected: gameEngine.localPunchConnected,
                                 punchDodged: gameEngine.localPunchDodged
                             )
@@ -146,8 +146,8 @@ struct MatchView: View {
             ScoreDisplay(
                 currentUsername: currentUsername,
                 opposingUsername: friend.username ?? "",
-                currentUserStreak: gameEngine.currentUserStreak,
-                opposingUserStreak: gameEngine.opposingUserStreak
+                currentUserDodges: gameEngine.roundResults[gameEngine.round][0],
+                opposingUserDodges: gameEngine.roundResults[gameEngine.round][1]
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.leading, 20)

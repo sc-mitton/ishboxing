@@ -3,13 +3,15 @@ import SwiftUI
 struct VideoBorder: ViewModifier {
     let color: Color
     let isActive: Bool
+    let borderWidth: CGFloat
 
     func body(content: Content) -> some View {
         content
             .overlay(
                 RoundedRectangle(cornerRadius: 24)
-                    .fill(color)
-                    .opacity(isActive ? 0.5 : 0)
+                    .stroke(color, lineWidth: borderWidth)
+                    .blur(radius: isActive ? borderWidth * 0.5 : 0)
+                    .opacity(isActive ? 0.8 : 0)
                     .animation(
                         .easeInOut(duration: isActive ? 0.3 : 0.7),
                         value: isActive
@@ -19,7 +21,7 @@ struct VideoBorder: ViewModifier {
 }
 
 struct VideoBorderView: View {
-    let isLocal: Bool
+    let borderSize: CGFloat
     let punchConnected: Bool
     let punchDodged: Bool
 
@@ -28,8 +30,20 @@ struct VideoBorderView: View {
 
     var body: some View {
         Color.clear
-            .modifier(VideoBorder(color: .red, isActive: connectedFlash))
-            .modifier(VideoBorder(color: .green, isActive: dodgedFlash))
+            .modifier(
+                VideoBorder(
+                    color: .red,
+                    isActive: connectedFlash,
+                    borderWidth: borderSize
+                )
+            )
+            .modifier(
+                VideoBorder(
+                    color: .green,
+                    isActive: dodgedFlash,
+                    borderWidth: borderSize
+                )
+            )
             .onChange(of: punchConnected) { oldValue, newValue in
                 if newValue {
                     withAnimation {

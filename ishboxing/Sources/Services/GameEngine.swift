@@ -28,8 +28,8 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var remoteSwipePoints: [CGPoint] = []
     @Published public private(set) var round = 0
     // Format is [current user's dodges, opponent's dodges] for each round
-    @Published public private(set) var roundResults: [[Int?]] = Array(
-        repeating: [nil, nil], count: 11)
+    @Published public private(set) var roundResults: [[Int]] = Array(
+        repeating: [0, 0], count: 11)
     @Published public private(set) var onOffense: Bool = false
     @Published public private(set) var fullScreenMessage: String?
     @Published public private(set) var bottomMessage: String?
@@ -46,7 +46,7 @@ final class GameEngine: ObservableObject {
     var currentUserStreak: Int {
         var streak = 0
         for i in (0..<round).reversed() {
-            if let result = roundResults[i][1], result > 0 {
+            if roundResults[i][1] > 0 {
                 streak += 1
             } else {
                 break
@@ -58,7 +58,7 @@ final class GameEngine: ObservableObject {
     var opposingUserStreak: Int {
         var streak = 0
         for i in (0..<round).reversed() {
-            if let result = roundResults[i][0], result > 0 {
+            if roundResults[i][0] > 0 {
                 streak += 1
             } else {
                 break
@@ -154,6 +154,12 @@ final class GameEngine: ObservableObject {
         // Update round results
         roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
 
+        // Set remote punch connected state
+        remotePunchConnected = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.remotePunchConnected = false
+        }
+
         // Update round
         // Flip who is on offense
         onOffense = !onOffense
@@ -166,6 +172,13 @@ final class GameEngine: ObservableObject {
 
         // Update round results
         roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
+
+        // Set remote punch dodged state
+        remotePunchDodged = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.remotePunchDodged = false
+        }
+
         waitingThrowResult = false
     }
 
@@ -271,10 +284,23 @@ final class GameEngine: ObservableObject {
         let dodgeDy = dodgeVector.end.y - dodgeVector.start.y
 
         // Calculate dot product
+        debugPrint("throwDx: \(throwDx), throwDy: \(throwDy)")
+        debugPrint("dodgeDx: \(dodgeDx), dodgeDy: \(dodgeDy)")
         let dotProduct = throwDx * dodgeDx + throwDy * dodgeDy
+        debugPrint("dotProduct: \(dotProduct)")
         if dotProduct > 0.7 {
+            // Punch connected
+            localPunchConnected = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.localPunchConnected = false
+            }
             onLocalPunchConnected()
         } else {
+            // Punch dodged
+            localPunchDodged = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.localPunchDodged = false
+            }
             onLocalPunchDodged()
         }
     }
