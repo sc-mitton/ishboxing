@@ -115,20 +115,24 @@ final class GameEngine: ObservableObject {
     }
 
     func setState(state: GameState) {
-        self.gameState = state
+        DispatchQueue.main.async {
+            self.gameState = state
+        }
     }
 
     func onLocalPunchConnected() {
         // Update round
-        round += 1
+        DispatchQueue.main.async {
+            self.round += 1
 
-        // Check if game is over
-        if round >= maxRounds {
-            isGameOver = true
+            // Check if game is over
+            if self.round >= self.maxRounds {
+                self.isGameOver = true
+            }
+
+            // Flip who is on offense
+            self.onOffense = !self.onOffense
         }
-
-        // Flip who is on offense
-        onOffense = !onOffense
 
         // Send punch connected message to opponent
         debugPrint("onLocalPunchConnected")
@@ -139,7 +143,9 @@ final class GameEngine: ObservableObject {
 
     func onLocalPunchDodged() {
         // Update round results
-        roundResults[round][0] = (roundResults[round][0] ?? 0) + 1
+        DispatchQueue.main.async {
+            self.roundResults[self.round][0] = (self.roundResults[self.round][0] ?? 0) + 1
+        }
 
         // Send punch dodged message to opponent
         debugPrint("onLocalPunchDodged")
@@ -152,49 +158,56 @@ final class GameEngine: ObservableObject {
         debugPrint("onRemotePunchConnected")
 
         // Update round results
-        roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
-
-        // Set remote punch connected state
-        remotePunchConnected = true
+        DispatchQueue.main.async {
+            self.roundResults[self.round][1] = (self.roundResults[self.round][1] ?? 0) + 1
+            self.remotePunchConnected = true
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.remotePunchConnected = false
         }
 
         // Update round
         // Flip who is on offense
-        onOffense = !onOffense
-
-        waitingThrowResult = false
+        DispatchQueue.main.async {
+            self.onOffense = !self.onOffense
+            self.waitingThrowResult = false
+        }
     }
 
     func onRemotePunchDodged() {
         debugPrint("onRemotePunchDodged")
 
         // Update round results
-        roundResults[round][1] = (roundResults[round][1] ?? 0) + 1
-
-        // Set remote punch dodged state
-        remotePunchDodged = true
+        DispatchQueue.main.async {
+            self.roundResults[self.round][1] = (self.roundResults[self.round][1] ?? 0) + 1
+            self.remotePunchDodged = true
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.remotePunchDodged = false
         }
 
-        waitingThrowResult = false
+        DispatchQueue.main.async {
+            self.waitingThrowResult = false
+        }
     }
 
     func localSwipe(point: CGPoint?, isLocal: Bool = false) {
         if let point = point {
-            localSwipePoints.append(point)
-            if localSwipePoints.count > MAX_SWIPE_POINTS {
-                localSwipePoints = Array(localSwipePoints.suffix(MAX_SWIPE_POINTS))
+            DispatchQueue.main.async {
+                self.localSwipePoints.append(point)
+                if self.localSwipePoints.count > MAX_SWIPE_POINTS {
+                    self.localSwipePoints = Array(self.localSwipePoints.suffix(MAX_SWIPE_POINTS))
+                }
+                self.smoothPoints(points: &self.localSwipePoints, windowSize: 5)
             }
-            smoothPoints(points: &localSwipePoints, windowSize: 5)
         } else {
             // nil indicates end of throw
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
                 self.localSwipePoints.removeAll()
             }
-            waitingThrowResult = true
+            DispatchQueue.main.async {
+                self.waitingThrowResult = true
+            }
             speedUpLocalPoints()
         }
 
@@ -205,7 +218,7 @@ final class GameEngine: ObservableObject {
         // Used at end of local swipe to have the swipe carry on momentum across the screen
 
         let lastPoint = self.localSwipePoints.last
-        let secondToLastPoint = self.localSwipePoints[localSwipePoints.count - 2]
+        let secondToLastPoint = self.localSwipePoints[self.localSwipePoints.count - 2]
         let dx = lastPoint!.x - secondToLastPoint.x
         let dy = lastPoint!.y - secondToLastPoint.y
 
@@ -225,7 +238,7 @@ final class GameEngine: ObservableObject {
         // Used at end of remote swipe to have the swipe carry on momentum across the screen
 
         let lastPoint = self.remoteSwipePoints.last
-        let secondToLastPoint = self.remoteSwipePoints[remoteSwipePoints.count - 2]
+        let secondToLastPoint = self.remoteSwipePoints[self.remoteSwipePoints.count - 2]
         let dx = lastPoint!.x - secondToLastPoint.x
         let dy = lastPoint!.y - secondToLastPoint.y
 
@@ -249,11 +262,13 @@ final class GameEngine: ObservableObject {
                 x: point.x * oponentScreenRatio.width,
                 y: point.y * oponentScreenRatio.height
             )
-            remoteSwipePoints.append(scaledPoint)
-            if remoteSwipePoints.count > MAX_SWIPE_POINTS {
-                remoteSwipePoints = Array(remoteSwipePoints.suffix(MAX_SWIPE_POINTS))
+            DispatchQueue.main.async {
+                self.remoteSwipePoints.append(scaledPoint)
+                if self.remoteSwipePoints.count > MAX_SWIPE_POINTS {
+                    self.remoteSwipePoints = Array(self.remoteSwipePoints.suffix(MAX_SWIPE_POINTS))
+                }
+                self.smoothPoints(points: &self.remoteSwipePoints, windowSize: 5)
             }
-            smoothPoints(points: &remoteSwipePoints, windowSize: 5)
         } else {
             // nil indicates end of throw
             DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
@@ -290,14 +305,18 @@ final class GameEngine: ObservableObject {
         debugPrint("dotProduct: \(dotProduct)")
         if dotProduct > 0.7 {
             // Punch connected
-            localPunchConnected = true
+            DispatchQueue.main.async {
+                self.localPunchConnected = true
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 self.localPunchConnected = false
             }
             onLocalPunchConnected()
         } else {
             // Punch dodged
-            localPunchDodged = true
+            DispatchQueue.main.async {
+                self.localPunchDodged = true
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 self.localPunchDodged = false
             }
