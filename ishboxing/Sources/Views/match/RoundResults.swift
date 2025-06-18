@@ -2,13 +2,13 @@ import SwiftUI
 
 struct RoundResults: View {
     let roundResults: [[Int?]]
-    let currentRound: Int
+    let currentRound: [Int]  // [round, user possession]
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var isExpanded = true
 
     var currentUserStreak: Int {
         var streak = 0
-        for i in (0..<currentRound).reversed() {
+        for i in (0..<currentRound[0]).reversed() {
             if let result = roundResults[i][1], result > 0 {
                 streak += 1
             } else {
@@ -20,7 +20,7 @@ struct RoundResults: View {
 
     var opposingUserStreak: Int {
         var streak = 0
-        for i in (0..<currentRound).reversed() {
+        for i in (0..<currentRound[0]).reversed() {
             if let result = roundResults[i][0], result > 0 {
                 streak += 1
             } else {
@@ -53,7 +53,7 @@ struct RoundResults: View {
                                     RoundCircle(
                                         roundIndex: roundIndex,
                                         roundResults: roundResults,
-                                        currentRound: currentRound
+                                        currentRound: currentRound[0]
                                     )
                                 }
                             }
@@ -63,7 +63,7 @@ struct RoundResults: View {
                                     RoundCircle(
                                         roundIndex: roundIndex,
                                         roundResults: roundResults,
-                                        currentRound: currentRound
+                                        currentRound: currentRound[0]
                                     )
                                 }
                             }
@@ -75,7 +75,7 @@ struct RoundResults: View {
                                 RoundCircle(
                                     roundIndex: roundIndex,
                                     roundResults: roundResults,
-                                    currentRound: currentRound
+                                    currentRound: currentRound[0]
                                 )
                             }
                         }
@@ -139,6 +139,6 @@ struct RoundCircle: View {
 #Preview {
     RoundResults(
         roundResults: Array(repeating: [nil, nil], count: 12),
-        currentRound: 0
+        currentRound: [0, 0]
     )
 }

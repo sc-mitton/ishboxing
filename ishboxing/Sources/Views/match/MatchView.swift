@@ -146,31 +146,64 @@ struct MatchView: View {
             ScoreDisplay(
                 currentUsername: currentUsername,
                 opposingUsername: friend.username ?? "",
-                currentUserDodges: gameEngine.roundResults[gameEngine.round][0],
-                opposingUserDodges: gameEngine.roundResults[gameEngine.round][1]
+                currentUserDodges: gameEngine.roundResults[gameEngine.round[0]][0] ?? 0,
+                opposingUserDodges: gameEngine.roundResults[gameEngine.round[0]][1] ?? 0,
+                currentRound: gameEngine.round
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(.leading, 20)
             .padding(.top, 20)
 
-            // Leave button
-            Button(action: {
-                viewModel.endMatch()
-                dismiss()
-            }) {
-                Text("LEAVE ")
-                    .font(.bangers(size: 16))
+            // Bottom row container
+            ZStack(alignment: .bottom) {
+                // Round Results (positioned absolutely)
+                RoundResults(
+                    roundResults: gameEngine.roundResults,
+                    currentRound: gameEngine.round
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(.leading, 20)
+                .padding(.bottom, 20)
+
+                // Fixed bottom row
+                HStack(spacing: 20) {
+                    // Placeholder for Round Results to maintain spacing
+                    Color.clear
+                        .frame(width: 100)
+
+                    Spacer()
+
+                    // Turn indicator
+                    Text(
+                        gameEngine.readyForOffense
+                            ? "YOUR TURN" : "\(friend.username ?? "OPPONENT")'S TURN "
+                    )
+                    .font(.bangers(size: 24))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
+
+                    Spacer()
+
+                    // Leave button
+                    Button(action: {
+                        viewModel.endMatch()
+                        dismiss()
+                    }) {
+                        Text("LEAVE ")
+                            .font(.bangers(size: 16))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                    }
+                    .background(
+                        Capsule()
+                            .fill(Color.ishRed)
+                    )
+                }
+                .frame(height: 60)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .background(
-                Capsule()
-                    .fill(Color.ishRed)
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
 
             // Countdown overlay
             if let countdown = gameEngine.countdown {
@@ -202,15 +235,6 @@ struct MatchView: View {
                     }
                 )
             }
-
-            // Round Results
-            RoundResults(
-                roundResults: gameEngine.roundResults,
-                currentRound: gameEngine.round
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-            .padding(.leading, 20)
-            .padding(.bottom, 20)
         }
         .onAppear {
             setupVideoViews()

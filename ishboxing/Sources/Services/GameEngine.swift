@@ -26,7 +26,7 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var countdown: Int? = nil
     @Published public private(set) var localSwipePoints: [CGPoint] = []
     @Published public private(set) var remoteSwipePoints: [CGPoint] = []
-    @Published public private(set) var round = 0
+    @Published public private(set) var round = [0, 0]  // [round, user possession]
     // Format is [current user's dodges, opponent's dodges] for each round
     @Published public private(set) var roundResults: [[Int]] = Array(
         repeating: [0, 0], count: 11)
@@ -45,7 +45,7 @@ final class GameEngine: ObservableObject {
 
     var currentUserStreak: Int {
         var streak = 0
-        for i in (0..<round).reversed() {
+        for i in (0..<round[0]).reversed() {
             if roundResults[i][1] > 0 {
                 streak += 1
             } else {
@@ -57,7 +57,7 @@ final class GameEngine: ObservableObject {
 
     var opposingUserStreak: Int {
         var streak = 0
-        for i in (0..<round).reversed() {
+        for i in (0..<round[0]).reversed() {
             if roundResults[i][0] > 0 {
                 streak += 1
             } else {
@@ -123,10 +123,16 @@ final class GameEngine: ObservableObject {
     func onLocalPunchConnected() {
         // Update round
         DispatchQueue.main.async {
-            self.round += 1
+            if self.round[1] == 1 {
+                self.round[0] += 1
+                self.round[1] = 0
+            } else {
+                self.round[1] = 1
+            }
+            debugPrint("onLocalPunchConnected, moving to round \(self.round[0] + 1)")
 
             // Check if game is over
-            if self.round >= self.maxRounds {
+            if self.round[0] >= self.maxRounds {
                 self.isGameOver = true
             }
 
@@ -144,7 +150,7 @@ final class GameEngine: ObservableObject {
     func onLocalPunchDodged() {
         // Update round results
         DispatchQueue.main.async {
-            self.roundResults[self.round][0] = (self.roundResults[self.round][0] ?? 0) + 1
+            self.roundResults[self.round[0]][0] = (self.roundResults[self.round[0]][0] ?? 0) + 1
         }
 
         // Send punch dodged message to opponent
@@ -156,10 +162,19 @@ final class GameEngine: ObservableObject {
 
     func onRemotePunchConnected() {
         debugPrint("onRemotePunchConnected")
+        DispatchQueue.main.async {
+            if self.round[1] == 1 {
+                self.round[0] += 1
+                self.round[1] = 0
+            } else {
+                self.round[1] = 1
+            }
+            debugPrint("onRemotePunchConnected, moving to round \(self.round[0] + 1)")
+        }
 
         // Update round results
         DispatchQueue.main.async {
-            self.roundResults[self.round][1] = (self.roundResults[self.round][1] ?? 0) + 1
+            self.roundResults[self.round[0]][1] = (self.roundResults[self.round[0]][1] ?? 0) + 1
             self.remotePunchConnected = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -179,7 +194,7 @@ final class GameEngine: ObservableObject {
 
         // Update round results
         DispatchQueue.main.async {
-            self.roundResults[self.round][1] = (self.roundResults[self.round][1] ?? 0) + 1
+            self.roundResults[self.round[0]][1] = (self.roundResults[self.round[0]][1] ?? 0) + 1
             self.remotePunchDodged = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
