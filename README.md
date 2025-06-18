@@ -3,9 +3,13 @@
 
 ## Local Development
 
-Make sure to have supabase installed
+Make sure to have supabase installed.
 
 `supabase init`
+
+Start supabase (make sure docker is running).
+
+`supabase start`
 
 Open a webhook tunnel so supabase can be reached from devices.
 
