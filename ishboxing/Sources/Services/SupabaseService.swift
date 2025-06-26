@@ -276,6 +276,8 @@ class SupabaseService: ObservableObject {
         let session = try await client.auth.session
         let userId = session.user.id
 
+        debugPrint("Saving APN token: \(token) for device: \(deviceId)")
+
         try await client
             .from("apn_tokens")
             .upsert(

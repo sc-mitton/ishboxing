@@ -303,7 +303,6 @@ final class GameEngine: ObservableObject {
     }
 
     func handleThrown() {
-        debugPrint("handleThrown")
         // Handle thrown punch from opponent
         // A thrown punch is when the opponent's finger has lifted from the screen, which results
         // in a null swipe point being sent, indicating the end. The user then has a short window
@@ -316,11 +315,14 @@ final class GameEngine: ObservableObject {
         // Calculate dot product of normalized vectors
         let dotProduct = throwVector.x * dodgeVector.x + throwVector.y * dodgeVector.y
 
+        let dodgeMagnitude = calculateDodgeMagnitude()
+
         debugPrint("dotProduct: \(dotProduct)")
         debugPrint("throwVector: \(throwVector)")
         debugPrint("dodgeVector: \(dodgeVector)")
+        debugPrint("dodgeMagnitude: \(dodgeMagnitude)")
 
-        if dotProduct > DOT_PRODUCT_THRESHOLD {
+        if dodgeMagnitude < 10 || dotProduct > DOT_PRODUCT_THRESHOLD {
             // Punch connected
             DispatchQueue.main.async {
                 self.localPunchConnected = true
@@ -438,6 +440,20 @@ final class GameEngine: ObservableObject {
 
         // Return normalized vector
         return CGPoint(x: dx / magnitude, y: dy / magnitude)
+    }
+
+    private func calculateDodgeMagnitude() -> CGFloat {
+        guard headPositionHistory.count >= 2 else {
+            return 0
+        }
+
+        let lastBox = headPositionHistory.last!.boundingBox
+        let recentBox = headPositionHistory.first!.boundingBox
+
+        let dx = lastBox.midX - recentBox.midX
+        let dy = lastBox.midY - recentBox.midY
+
+        return sqrt(dx * dx + dy * dy)
     }
 
     private func calculateDodgeVector() -> CGPoint {
