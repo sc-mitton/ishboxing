@@ -6,18 +6,18 @@ struct PoseAnnotation: View {
 
     // Use a uniform scale to preserve aspect ratio
     private var xScale: CGFloat {
-        min(viewSize.width, viewSize.height) / 640.0
+        min(viewSize.width, viewSize.height) / Constants.HeadPoseDetection.targetSize
     }
     private var yScale: CGFloat {
-        min(viewSize.width, viewSize.height) / 640.0
+        min(viewSize.width, viewSize.height) / Constants.HeadPoseDetection.targetSize
     }
 
     // Calculate offset to center the annotation
     private var xOffset: CGFloat {
-        (viewSize.width - 640.0 * xScale) / 2.0
+        (viewSize.width - Constants.HeadPoseDetection.targetSize * xScale) / 2.0
     }
     private var yOffset: CGFloat {
-        (viewSize.height - 640.0 * yScale) / 2.0
+        (viewSize.height - Constants.HeadPoseDetection.targetSize * yScale) / 2.0
     }
 
     var body: some View {
