@@ -93,7 +93,7 @@ private struct FriendsListContent: View {
             }
         } else {
             List {
-                if friendManagement.unifiedFriends.isEmpty {
+                if friendManagement.friends.isEmpty {
                     HStack {
                         Spacer()
                         Text("No friends yet")
@@ -104,9 +104,9 @@ private struct FriendsListContent: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                 } else {
-                    ForEach(friendManagement.unifiedFriends) { unifiedFriend in
+                    ForEach(friendManagement.friends) { friendItem in
                         FriendListItem(
-                            unifiedFriend: unifiedFriend,
+                            friendItem: friendItem,
                             onMatchInitiated: onMatchInitiated,
                             friendManagement: friendManagement
                         )
@@ -129,20 +129,20 @@ private struct FriendsListContent: View {
 }
 
 private struct FriendListItem: View {
-    let unifiedFriend: UnifiedFriend
+    let friendItem: FriendItem
     let onMatchInitiated: (User) -> Void
     @ObservedObject var friendManagement: FriendManagement
 
     var body: some View {
         HStack {
-            Text(unifiedFriend.user.username)
+            Text(friendItem.user.username)
                 .font(.headline)
             Spacer()
 
-            switch unifiedFriend.status {
+            switch friendItem.status {
             case .confirmed:
                 Button(action: {
-                    onMatchInitiated(unifiedFriend.user)
+                    onMatchInitiated(friendItem.user)
                 }) {
                     Image("glove")
                         .resizable()
@@ -155,7 +155,7 @@ private struct FriendListItem: View {
                 }
             case .pending:
                 Button(action: {
-                    if let requestId = unifiedFriend.requestId {
+                    if let requestId = friendItem.requestId {
                         Task {
                             try? await friendManagement.confirmFriendRequest(requestId)
                         }
@@ -185,9 +185,9 @@ private struct FriendListItem: View {
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 Task {
-                    debugPrint("Friend: \(unifiedFriend)")
-                    debugPrint("Deleting friend: \(unifiedFriend.user.id)")
-                    try? await friendManagement.deleteFriend(unifiedFriend.user.id)
+                    debugPrint("Friend: \(friendItem)")
+                    debugPrint("Deleting friend: \(friendItem.user.id)")
+                    try? await friendManagement.deleteFriend(friendItem.user.id)
                 }
             } label: {
                 Label("Delete", systemImage: "trash")

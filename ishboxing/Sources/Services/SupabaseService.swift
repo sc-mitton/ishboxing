@@ -141,47 +141,82 @@ class SupabaseService: ObservableObject {
         return response.data.count > 0
     }
 
-    func getFriends() async throws -> [User] {
+    func getAllFriendRelationships() async throws -> (
+        confirmedFriends: [User], pendingRequests: [FriendRequest], sentRequests: [FriendRequest]
+    ) {
         let session = try await client.auth.session
         let userId = session.user.id
 
-        // Fetch friends where the current user is either user_id or friend_id
+        // Single query to get all friend relationships where current user is involved
         let response = try await client.from("friends")
             .select(
                 """
                     id,
                     user_id,
                     friend_id,
-                    friend:profiles!friends_friend_id_fkey (
+                    confirmed,
+                    friend_profile:profiles!friends_friend_id_fkey (
                         username
                     ),
-                    user:profiles!friends_user_id_fkey (
+                    user_profile:profiles!friends_user_id_fkey (
                         username
                     )
                 """
             )
             .or("user_id.eq.\(userId),friend_id.eq.\(userId)")
-            .eq("confirmed", value: true)
             .execute()
 
-        // Parse the response and create Friend objects
-        let friendsData = try self.decoder.decode([FriendResponse].self, from: response.data)
+        // Parse the response
+        let relationshipsData = try self.decoder.decode(
+            [FriendRelationshipResponse].self, from: response.data)
 
-        return friendsData.map { response in
-            if response.user_id == session.user.id {
-                // Current user is user_id, so use friend's info
-                User(
-                    id: response.friend_id,
-                    username: response.friend.username
-                )
+        var confirmedFriends: [User] = []
+        var pendingRequests: [FriendRequest] = []
+        var sentRequests: [FriendRequest] = []
+
+        for relationship in relationshipsData {
+            if relationship.confirmed == true {
+                // This is a confirmed friendship
+                let friendUser: User
+                if relationship.user_id == userId {
+                    // Current user is user_id, so use friend's info
+                    friendUser = User(
+                        id: relationship.friend_id,
+                        username: relationship.friend_profile.username
+                    )
+                } else {
+                    // Current user is friend_id, so use user's info
+                    friendUser = User(
+                        id: relationship.user_id,
+                        username: relationship.user_profile.username
+                    )
+                }
+                confirmedFriends.append(friendUser)
             } else {
-                // Current user is friend_id, so use user's info
-                User(
-                    id: response.user_id,
-                    username: response.user.username
-                )
+                // This is a pending request
+                if relationship.user_id == userId {
+                    // Current user sent the request
+                    let sentRequest = FriendRequest(
+                        id: relationship.id,
+                        from: relationship.user_id,
+                        to: relationship.friend_id,
+                        username: relationship.friend_profile.username
+                    )
+                    sentRequests.append(sentRequest)
+                } else {
+                    // Current user received the request
+                    let pendingRequest = FriendRequest(
+                        id: relationship.id,
+                        from: relationship.user_id,
+                        to: relationship.friend_id,
+                        username: relationship.user_profile.username
+                    )
+                    pendingRequests.append(pendingRequest)
+                }
             }
         }
+
+        return (confirmedFriends, pendingRequests, sentRequests)
     }
 
     func addFriend(_ username: String) async throws {
@@ -229,47 +264,6 @@ class SupabaseService: ObservableObject {
 
     func denyFriendship(_ friendshipId: String) async throws {
         try await deleteFriendship(friendshipId)
-    }
-
-    func getPendingFriendRequests() async throws -> [FriendRequest] {
-        let session = try await client.auth.session
-        let userId = session.user.id
-        let response = try await client.from("friends")
-            .select("id, user_id, friend_id, profiles:user_id(username)")
-            .eq("friend_id", value: userId)
-            .or("confirmed.eq.false,confirmed.is.null")
-            .execute()
-
-        // Parse the response and create FriendRequest objects
-        let friendsData = try self.decoder.decode([FriendRequestResponse].self, from: response.data)
-        return friendsData.map { response in
-            FriendRequest(
-                id: response.id,
-                from: response.user_id,
-                to: response.friend_id,
-                username: response.profiles.username
-            )
-        }
-    }
-
-    func getPendingSentFriendRequests() async throws -> [FriendRequest] {
-        let session = try await client.auth.session
-        let userId = session.user.id
-        let response = try await client.from("friends")
-            .select("id, user_id, friend_id, profiles:friend_id(username)")
-            .eq("user_id", value: userId)
-            .or("confirmed.eq.false,confirmed.is.null")
-            .execute()
-
-        let friendsData = try self.decoder.decode([FriendRequestResponse].self, from: response.data)
-        return friendsData.map { response in
-            FriendRequest(
-                id: response.id,
-                from: response.user_id,
-                to: response.friend_id,
-                username: response.profiles.username
-            )
-        }
     }
 
     func saveAPNToken(token: String, deviceId: String) async throws {

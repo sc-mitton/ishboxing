@@ -60,6 +60,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     private func handleNotification(_ content: UNNotificationContent) {
         let catIdentifier = content.categoryIdentifier
 
+        // debug print everything
+        debugPrint(content)
+        debugPrint(catIdentifier)
+        debugPrint(content.userInfo)
+        debugPrint(content.body)
+
         if catIdentifier == "FRIEND_REQUEST" || catIdentifier == "FRIEND_CONFIRMATION" {
             UNUserNotificationCenter.current().removeAllDeliveredNotifications()
             Task { @MainActor in

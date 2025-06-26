@@ -6,7 +6,7 @@ enum FriendStatus {
     case requested
 }
 
-struct UnifiedFriend: Identifiable {
+struct FriendItem: Identifiable {
     let id: UUID
     let user: User
     let status: FriendStatus
@@ -16,7 +16,7 @@ struct UnifiedFriend: Identifiable {
 class FriendManagement: ObservableObject {
     static let shared = FriendManagement()
 
-    @Published var unifiedFriends: [UnifiedFriend] = []
+    @Published var friends: [FriendItem] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -29,17 +29,16 @@ class FriendManagement: ObservableObject {
         errorMessage = nil
 
         do {
-            let fetchedFriends = try await supabaseService.getFriends()
-            let fetchedPendingRequests = try await supabaseService.getPendingFriendRequests()
-            let fetchedSentRequests = try await supabaseService.getPendingSentFriendRequests()
+            let (fetchedFriends, fetchedPendingRequests, fetchedSentRequests) =
+                try await supabaseService.getAllFriendRelationships()
 
-            // Create unified list with unique IDs
-            var unified: [UnifiedFriend] = []
+            // Create list with unique IDs
+            var allFriends: [FriendItem] = []
 
             // Add confirmed friends
-            unified.append(
+            allFriends.append(
                 contentsOf: fetchedFriends.map { friend in
-                    UnifiedFriend(
+                    FriendItem(
                         id: UUID(),
                         user: friend,
                         status: .confirmed,
@@ -47,21 +46,21 @@ class FriendManagement: ObservableObject {
                     )
                 })
 
-            // Add pending friend requests
-            unified.append(
+            // Add pending friend requests (received by current user)
+            allFriends.append(
                 contentsOf: fetchedPendingRequests.map { request in
-                    UnifiedFriend(
+                    FriendItem(
                         id: UUID(),
-                        user: User(id: request.friend_id, username: request.friend.username),
+                        user: User(id: request.user_id, username: request.friend.username),
                         status: .pending,
                         requestId: request.id
                     )
                 })
 
-            // Add sent friend requests
-            unified.append(
+            // Add sent friend requests (sent by current user)
+            allFriends.append(
                 contentsOf: fetchedSentRequests.map { request in
-                    UnifiedFriend(
+                    FriendItem(
                         id: UUID(),
                         user: User(id: request.friend_id, username: request.friend.username),
                         status: .requested,
@@ -69,7 +68,7 @@ class FriendManagement: ObservableObject {
                     )
                 })
 
-            unifiedFriends = unified
+            friends = allFriends
             isLoading = false
         } catch {
             errorMessage = error.localizedDescription

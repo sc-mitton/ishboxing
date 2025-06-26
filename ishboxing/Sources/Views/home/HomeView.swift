@@ -169,7 +169,7 @@ struct HomeView: View {
             }
 
             // Find the friend who initiated the match
-            if let friend = self.friendManagement.unifiedFriends.first(where: {
+            if let friend = self.friendManagement.friends.first(where: {
                 $0.user.id.uuidString == match.from.id.uuidString
             }) {
                 self.selectedFriend = friend.user

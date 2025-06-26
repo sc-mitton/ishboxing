@@ -10,22 +10,6 @@ public struct User: Identifiable, Codable {
     }
 }
 
-public struct FriendResponse: Codable {
-    public let id: UUID
-    public let user_id: UUID
-    public let friend_id: UUID
-    public let friend: FriendUser
-    public let user: FriendUser
-
-    public init(id: UUID, user_id: UUID, friend_id: UUID, friend: FriendUser, user: FriendUser) {
-        self.id = id
-        self.user_id = user_id
-        self.friend_id = friend_id
-        self.friend = friend
-        self.user = user
-    }
-}
-
 public struct FriendUser: Codable {
     public let username: String
 
@@ -48,9 +32,24 @@ public struct FriendRequest: Codable {
     }
 }
 
-public struct FriendRequestResponse: Codable {
+// Response structure for all friend relationships
+public struct FriendRelationshipResponse: Codable {
     public let id: UUID
     public let user_id: UUID
     public let friend_id: UUID
-    public let profiles: FriendUser
+    public let confirmed: Bool?
+    public let friend_profile: FriendUser
+    public let user_profile: FriendUser
+
+    public init(
+        id: UUID, user_id: UUID, friend_id: UUID, confirmed: Bool?, friend_profile: FriendUser,
+        user_profile: FriendUser
+    ) {
+        self.id = id
+        self.user_id = user_id
+        self.friend_id = friend_id
+        self.confirmed = confirmed
+        self.friend_profile = friend_profile
+        self.user_profile = user_profile
+    }
 }
