@@ -92,16 +92,31 @@ Deno.serve(async (req) => {
       return new Response("Error fetching users", { status: 500 });
     }
 
+    if (!users || users.length !== 2) {
+      return new Response(JSON.stringify({ error: "Users not found" }), {
+        status: 404,
+      });
+    }
+
+    const fromUser = users.find((user) => user.id === requestData.user_id);
+    const toUser = users.find((user) => user.id === requestData.friend_id);
+
+    if (!fromUser || !toUser) {
+      return new Response(JSON.stringify({ error: "Users not found" }), {
+        status: 404,
+      });
+    }
+
     await sendFriendRequestNotification(
       {
-        username: users[0].username,
-        user_id: users[0].id,
+        username: fromUser.username,
+        user_id: fromUser.id,
       },
       {
-        username: users[1].username,
-        user_id: users[1].id,
+        username: toUser.username,
+        user_id: toUser.id,
       },
-      users[1].apn_tokens[0].token,
+      (toUser.apn_tokens as any).token,
     );
 
     if (error) {
