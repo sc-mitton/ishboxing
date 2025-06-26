@@ -17,8 +17,8 @@
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="JCq-8S-bcD">
                                 <rect key="frame" x="-18" y="-549.66666666666663" width="429" height="1951.333333333333"/>
-                                <variation key="heightClass=regular-widthClass=compact" image="SplashBack"/>
-                                <variation key="heightClass=regular-widthClass=regular" image="SplashBack"/>
+                                <variation key="heightClass=regular-widthClass=compact" image="splashBack"/>
+                                <variation key="heightClass=regular-widthClass=regular" image="splashBack"/>
                             </imageView>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" translatesAutoresizingMaskIntoConstraints="NO" id="qlJ-lS-305">
                                 <rect key="frame" x="37" y="-76" width="319" height="1004"/>
@@ -54,6 +54,6 @@
     </scenes>
     <resources>
         <image name="Splash" width="1108" height="1108"/>
-        <image name="SplashBack" width="1142" height="2475"/>
+        <image name="splashBack" width="1142" height="2475"/>
     </resources>
 </document>
