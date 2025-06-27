@@ -180,7 +180,7 @@ struct MatchView: View {
                             : ""
                     )
                     .font(.bangers(size: 20))
-                    .foregroundColor(gameEngine.isInReactionWindow ? .green : .white)
+                    .foregroundColor(.white)
                     .frame(maxWidth: .infinity, alignment: .center)
 
                     Spacer()

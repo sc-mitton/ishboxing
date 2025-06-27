@@ -7,6 +7,8 @@ let POINTS_CLEAR_DELAY: TimeInterval = 1.0
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
 let MAX_HEAD_POSE_HISTORY_SIZE = 30
 let REACTION_CUTOFF_TIME: TimeInterval = 0.5
+let NUMBER_OF_ROUNDS = 11
+let MIN_SWIPE_POINTS = 5
 
 enum DragState {
     case idle
@@ -29,7 +31,7 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var round = [0, 0]  // [round, user possession]
     // Format is [current user's dodges, opponent's dodges] for each round
     @Published public private(set) var roundResults: [[Int]] = Array(
-        repeating: [0, 0], count: 11)
+        repeating: [0, 0], count: NUMBER_OF_ROUNDS)
     @Published public private(set) var onOffense: Bool = false
     @Published public private(set) var fullScreenMessage: String?
     @Published public private(set) var bottomMessage: String?
@@ -37,7 +39,6 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var isGameOver: Bool = false
     @Published public private(set) var headPositionHistory: [HeadPoseObservation] = []
     @Published public private(set) var match: Match?
-    @Published public private(set) var isInReactionWindow: Bool = false
 
     @Published public private(set) var localPunchConnected: Bool = false
     @Published public private(set) var localPunchDodged: Bool = false
@@ -217,18 +218,24 @@ final class GameEngine: ObservableObject {
                 }
                 self.smoothPoints(points: &self.localSwipePoints, windowSize: 5)
             }
-        } else if self.localSwipePoints.count > 5 {
-            // nil indicates end of throw
-            DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
-                self.localSwipePoints.removeAll()
-            }
+            sendSwipe(point: point)
+        } else if self.localSwipePoints.count > MIN_SWIPE_POINTS {
             DispatchQueue.main.async {
                 self.waitingThrowResult = true
             }
             speedUpLocalPoints()
+            // nil indicates end of throw
+            DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
+                self.localSwipePoints.removeAll()
+            }
+            sendSwipe(point: point)
+        } else {
+            // If the swipe is too short, remove all points
+            DispatchQueue.main.async {
+                self.localSwipePoints.removeAll()
+            }
+            sendSwipe(point: point)
         }
-
-        sendSwipe(point: point)
     }
 
     func speedUpLocalPoints() {
@@ -289,24 +296,22 @@ final class GameEngine: ObservableObject {
                 }
                 self.smoothPoints(points: &self.remoteSwipePoints, windowSize: 5)
             }
-        } else {
+        } else if self.remoteSwipePoints.count > MIN_SWIPE_POINTS {
             // nil indicates end of throw
             speedUpRemotePoints {
                 self.isGatheringReaction = true
             }
             self.isGatheringReaction = true
-            debugPrint("isGatheringReaction: true")
-            // Update on ui thread
-            DispatchQueue.main.async {
-                self.isInReactionWindow = true
-            }
             DispatchQueue.main.asyncAfter(deadline: .now() + REACTION_CUTOFF_TIME) {
                 self.isGatheringReaction = false
                 self.pauseCapturingPoseHistory = true
                 self.handleThrown()
                 self.pauseCapturingPoseHistory = false
-                debugPrint("isGatheringReaction: false")
-                self.isInReactionWindow = false
+            }
+        } else {
+            // If the swipe is too short, remove all points
+            DispatchQueue.main.async {
+                self.remoteSwipePoints.removeAll()
             }
         }
     }
