@@ -3,9 +3,9 @@ import Foundation
 import WebRTC
 
 let MAX_SWIPE_POINTS = 40
-let POINTS_CLEAR_DELAY: TimeInterval = 1.5
+let POINTS_CLEAR_DELAY: TimeInterval = 1.0
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
-let MAX_HEAD_POSE_HISTORY_SIZE = 5
+let MAX_HEAD_POSE_HISTORY_SIZE = 30
 let REACTION_CUTOFF_TIME: TimeInterval = 0.5
 
 enum DragState {
@@ -37,6 +37,7 @@ final class GameEngine: ObservableObject {
     @Published public private(set) var isGameOver: Bool = false
     @Published public private(set) var headPositionHistory: [HeadPoseObservation] = []
     @Published public private(set) var match: Match?
+    @Published public private(set) var isInReactionWindow: Bool = false
 
     @Published public private(set) var localPunchConnected: Bool = false
     @Published public private(set) var localPunchDodged: Bool = false
@@ -76,7 +77,8 @@ final class GameEngine: ObservableObject {
 
     private let maxHistorySize = 10
     private let maxRounds = 11
-    private var isGatheringDodgeVector: Bool = false
+    private var pauseCapturingPoseHistory: Bool = false
+    private var isGatheringReaction: Bool = false
 
     public var oponentIsReady: Bool = false
     public var oponentScreenRatio: CGSize = CGSize(width: 1, height: 1)
@@ -289,15 +291,22 @@ final class GameEngine: ObservableObject {
             }
         } else {
             // nil indicates end of throw
-            DispatchQueue.main.asyncAfter(deadline: .now() + POINTS_CLEAR_DELAY) {
-                self.remoteSwipePoints.removeAll()
-                self.isGatheringDodgeVector = false
-            }
             speedUpRemotePoints {
-                self.isGatheringDodgeVector = true
+                self.isGatheringReaction = true
+            }
+            self.isGatheringReaction = true
+            debugPrint("isGatheringReaction: true")
+            // Update on ui thread
+            DispatchQueue.main.async {
+                self.isInReactionWindow = true
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + REACTION_CUTOFF_TIME) {
+                self.isGatheringReaction = false
+                self.pauseCapturingPoseHistory = true
                 self.handleThrown()
+                self.pauseCapturingPoseHistory = false
+                debugPrint("isGatheringReaction: false")
+                self.isInReactionWindow = false
             }
         }
     }
@@ -322,7 +331,7 @@ final class GameEngine: ObservableObject {
         debugPrint("dodgeVector: \(dodgeVector)")
         debugPrint("dodgeMagnitude: \(dodgeMagnitude)")
 
-        if dodgeMagnitude < 10 || dotProduct > DOT_PRODUCT_THRESHOLD {
+        if dodgeMagnitude < 30 || dotProduct > DOT_PRODUCT_THRESHOLD {
             // Punch connected
             DispatchQueue.main.async {
                 self.localPunchConnected = true
@@ -341,6 +350,8 @@ final class GameEngine: ObservableObject {
             }
             onLocalPunchDodged()
         }
+
+        self.remoteSwipePoints.removeAll()
     }
 
     func smoothPoints(points: inout [CGPoint], windowSize: Int) {
@@ -492,8 +503,12 @@ extension GameEngine: HeadPoseDetectionDelegate {
     func headPoseDetectionRenderer(
         _ renderer: HeadPoseDetectionRenderer, didUpdateHeadPose headPose: HeadPoseObservation
     ) {
+        if self.pauseCapturingPoseHistory {
+            return
+        }
+
         // Update history
-        if self.isGatheringDodgeVector {
+        if self.isGatheringReaction {
             // Only append if dx vector direction is same as the vector for whole history
             // with the exception of when the magnitude of the history vector is close to 0 (< 0.05)
             // This is because:
@@ -501,20 +516,31 @@ extension GameEngine: HeadPoseDetectionDelegate {
             // 2. When the head dodges, the head always returns to the resting position, and we don't want to accidentally
             // gather any data from the return motion
             let historyVector = calculateDodgeVector()
-
             let historyMagnitude = sqrt(
                 historyVector.x * historyVector.x + historyVector.y * historyVector.y)
+            let historyNormalized = CGPoint(
+                x: historyVector.x / historyMagnitude,
+                y: historyVector.y / historyMagnitude
+            )
 
             let dx = headPose.boundingBox.midX - headPositionHistory.last!.boundingBox.midX
+            let dy = headPose.boundingBox.midY - headPositionHistory.last!.boundingBox.midY
             let dxMagnitude = sqrt(dx * dx)
-            let dxNorm = dx / dxMagnitude
+            let dyMagnitude = sqrt(dy * dy)
+            let dNormalized = CGPoint(x: dx / dxMagnitude, y: dy / dyMagnitude)
 
-            if historyMagnitude > 0.05 && (historyMagnitude.sign == dxNorm.sign) {
+            let dotProduct =
+                historyNormalized.x * dNormalized.x + historyNormalized.y * dNormalized.y
+
+            if dotProduct > 0 || historyMagnitude < 10 {
                 headPositionHistory.append(headPose)
             }
+
         } else {
             headPositionHistory.append(headPose)
         }
+
+        // Keep history at max size
         if headPositionHistory.count > maxHistorySize {
             headPositionHistory.removeFirst()
         }
