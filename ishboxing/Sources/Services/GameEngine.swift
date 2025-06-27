@@ -6,9 +6,9 @@ let MAX_SWIPE_POINTS = 40
 let POINTS_CLEAR_DELAY: TimeInterval = 1.0
 let DOT_PRODUCT_THRESHOLD: Double = 0.7
 let MAX_HEAD_POSE_HISTORY_SIZE = 30
-let REACTION_CUTOFF_TIME: TimeInterval = 0.5
-let NUMBER_OF_ROUNDS = 11
+let REACTION_CUTOFF_TIME: TimeInterval = 0.8
 let MIN_SWIPE_POINTS = 5
+let NUMBER_OF_ROUNDS = 7
 
 enum DragState {
     case idle
@@ -76,7 +76,6 @@ final class GameEngine: ObservableObject {
     private var countdownTimer: AnyCancellable?
     private let countdownPublisher = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    private let maxHistorySize = 10
     private let maxRounds = 11
     private var pauseCapturingPoseHistory: Bool = false
     private var isGatheringReaction: Bool = false
@@ -133,7 +132,6 @@ final class GameEngine: ObservableObject {
             } else {
                 self.round[1] = 1
             }
-            debugPrint("onLocalPunchConnected, moving to round \(self.round[0] + 1)")
 
             // Check if game is over
             if self.round[0] >= self.maxRounds {
@@ -145,7 +143,6 @@ final class GameEngine: ObservableObject {
         }
 
         // Send punch connected message to opponent
-        debugPrint("onLocalPunchConnected")
         let payload = RTCDataPayload(type: "punchConnected", data: Data())
         let encodedPayload = try! JSONEncoder().encode(payload)
         webRTCClient.sendData(encodedPayload)
@@ -158,14 +155,12 @@ final class GameEngine: ObservableObject {
         }
 
         // Send punch dodged message to opponent
-        debugPrint("onLocalPunchDodged")
         let payload = RTCDataPayload(type: "punchDodged", data: Data())
         let encodedPayload = try! JSONEncoder().encode(payload)
         webRTCClient.sendData(encodedPayload)
     }
 
     func onRemotePunchConnected() {
-        debugPrint("onRemotePunchConnected")
         DispatchQueue.main.async {
             if self.round[1] == 1 {
                 self.round[0] += 1
@@ -173,7 +168,6 @@ final class GameEngine: ObservableObject {
             } else {
                 self.round[1] = 1
             }
-            debugPrint("onRemotePunchConnected, moving to round \(self.round[0] + 1)")
         }
 
         // Update round results
@@ -193,8 +187,6 @@ final class GameEngine: ObservableObject {
     }
 
     func onRemotePunchDodged() {
-        debugPrint("onRemotePunchDodged")
-
         // Update round results
         DispatchQueue.main.async {
             self.roundResults[self.round[0]][1] = (self.roundResults[self.round[0]][1] ?? 0) + 1
@@ -324,19 +316,24 @@ final class GameEngine: ObservableObject {
 
         // Now we can use the dodge vector to determine if a punch was dodged
         let throwVector = calculateThrowVector()
-        let dodgeVector = calculateDodgeVector()
+        let dodgeVector = calculateDodgeHistoryVector()
 
         // Calculate dot product of normalized vectors
         let dotProduct = throwVector.x * dodgeVector.x + throwVector.y * dodgeVector.y
 
-        let dodgeMagnitude = calculateDodgeMagnitude()
+        let dodgeMagnitude = calculateDodgeHistoryMagnitude()
 
-        debugPrint("dotProduct: \(dotProduct)")
-        debugPrint("throwVector: \(throwVector)")
-        debugPrint("dodgeVector: \(dodgeVector)")
-        debugPrint("dodgeMagnitude: \(dodgeMagnitude)")
+        print(
+            """
+            ------------------------------
+            HANDLING THROWN PUNCH
+            ------------------------------
+            dodgeMagnitude: \(dodgeMagnitude), dotProduct: \(dotProduct)
+            throwVector: \(throwVector), dodgeVector: \(dodgeVector)
+            ------------------------------
+            """)
 
-        if dodgeMagnitude < 30 || dotProduct > DOT_PRODUCT_THRESHOLD {
+        if dodgeMagnitude < 10 || dotProduct > DOT_PRODUCT_THRESHOLD {
             // Punch connected
             DispatchQueue.main.async {
                 self.localPunchConnected = true
@@ -458,7 +455,7 @@ final class GameEngine: ObservableObject {
         return CGPoint(x: dx / magnitude, y: dy / magnitude)
     }
 
-    private func calculateDodgeMagnitude() -> CGFloat {
+    private func calculateDodgeHistoryMagnitude() -> CGFloat {
         guard headPositionHistory.count >= 2 else {
             return 0
         }
@@ -472,7 +469,7 @@ final class GameEngine: ObservableObject {
         return sqrt(dx * dx + dy * dy)
     }
 
-    private func calculateDodgeVector() -> CGPoint {
+    private func calculateDodgeHistoryVector() -> CGPoint {
         guard headPositionHistory.count >= 2 else {
             return CGPoint(x: 0, y: 0)
         }
@@ -499,6 +496,13 @@ final class GameEngine: ObservableObject {
         // Calculate magnitude of the vector
         let magnitude = sqrt(dx * dx + dy * dy)
 
+        // If the magnitude is too small, return 0,0
+        // This is to avoid noise at the beginning of the gathering stage
+        // Also avoids division by 0
+        guard magnitude > 0.0 else {
+            return CGPoint(x: 0, y: 0)
+        }
+
         // Return normalized vector as start and end points
         return CGPoint(x: dx / magnitude, y: dy / magnitude)
     }
@@ -515,18 +519,14 @@ extension GameEngine: HeadPoseDetectionDelegate {
         // Update history
         if self.isGatheringReaction {
             // Only append if dx vector direction is same as the vector for whole history
-            // with the exception of when the magnitude of the history vector is close to 0 (< 0.05)
+            // with the exception of when the magnitude of the history vector is small
             // This is because:
-            // 1. There might be small perturbations in the vector due to noise at the beginning of the gathering stage
+            // 1. There might be small perturbations in the vector due to noise at the beginning of the gathering stage,
+            // or the user migth flinch slightly in a direction before they commit to a specific main direction
             // 2. When the head dodges, the head always returns to the resting position, and we don't want to accidentally
             // gather any data from the return motion
-            let historyVector = calculateDodgeVector()
-            let historyMagnitude = sqrt(
-                historyVector.x * historyVector.x + historyVector.y * historyVector.y)
-            let historyNormalized = CGPoint(
-                x: historyVector.x / historyMagnitude,
-                y: historyVector.y / historyMagnitude
-            )
+            let historyVector = calculateDodgeHistoryVector()
+            let historyMagnitude = calculateDodgeHistoryMagnitude()
 
             let dx = headPose.boundingBox.midX - headPositionHistory.last!.boundingBox.midX
             let dy = headPose.boundingBox.midY - headPositionHistory.last!.boundingBox.midY
@@ -534,10 +534,16 @@ extension GameEngine: HeadPoseDetectionDelegate {
             let dyMagnitude = sqrt(dy * dy)
             let dNormalized = CGPoint(x: dx / dxMagnitude, y: dy / dyMagnitude)
 
-            let dotProduct =
-                historyNormalized.x * dNormalized.x + historyNormalized.y * dNormalized.y
+            let dotProduct = historyVector.x * dNormalized.x + historyVector.y * dNormalized.y
 
-            if dotProduct > 0 || historyMagnitude < 10 {
+            debugPrint(
+                """
+                historyVector: \(historyVector)
+                dx: \(dx), dy: \(dy), dxMagnitude: \(dxMagnitude), dyMagnitude: \(dyMagnitude)
+                dotProduct: \(dotProduct), historyMagnitude: \(historyMagnitude)
+                """)
+
+            if dotProduct > 0 || historyMagnitude < 50 {
                 headPositionHistory.append(headPose)
             }
 
@@ -546,7 +552,7 @@ extension GameEngine: HeadPoseDetectionDelegate {
         }
 
         // Keep history at max size
-        if headPositionHistory.count > maxHistorySize {
+        if headPositionHistory.count > MAX_HEAD_POSE_HISTORY_SIZE {
             headPositionHistory.removeFirst()
         }
     }

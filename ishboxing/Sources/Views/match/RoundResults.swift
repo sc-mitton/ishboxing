@@ -55,11 +55,11 @@ struct RoundResults: View {
 
             if isExpanded {
                 Group {
-                    if isCompact {
-                        // Two rows for compact screens
+                    if isCompact && roundResults.count > 5 {
+                        // Two rows for compact screens only when there are more than 5 rounds
                         VStack(spacing: 8) {
                             HStack(spacing: 12) {
-                                ForEach(0..<6) { roundIndex in
+                                ForEach(0..<roundResults.count / 2) { roundIndex in
                                     RoundCircle(
                                         roundIndex: roundIndex,
                                         roundResults: roundResults,
@@ -69,7 +69,7 @@ struct RoundResults: View {
                             }
 
                             HStack(spacing: 12) {
-                                ForEach(6..<12) { roundIndex in
+                                ForEach(roundResults.count / 2..<roundResults.count) { roundIndex in
                                     RoundCircle(
                                         roundIndex: roundIndex,
                                         roundResults: roundResults,
@@ -79,9 +79,9 @@ struct RoundResults: View {
                             }
                         }
                     } else {
-                        // Single row for regular screens
+                        // Single row for regular screens or when 5 or fewer rounds
                         HStack(spacing: 12) {
-                            ForEach(0..<12) { roundIndex in
+                            ForEach(0..<roundResults.count) { roundIndex in
                                 RoundCircle(
                                     roundIndex: roundIndex,
                                     roundResults: roundResults,
@@ -158,7 +158,7 @@ struct RoundCircle: View {
 
 #Preview {
     RoundResults(
-        roundResults: Array(repeating: [nil, nil], count: 12),
-        currentRound: [0, 0]
+        roundResults: Array(repeating: [nil, nil], count: 5),
+        currentRound: [0, 0],
     )
 }
