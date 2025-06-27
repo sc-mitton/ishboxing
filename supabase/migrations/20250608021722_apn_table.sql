@@ -29,34 +29,13 @@ CREATE POLICY "Allow service role can access APN tokens"
     USING (true)
     WITH CHECK (true);
 
-create policy "Enable users to view their own data only"
-on "public"."apn_tokens"
-as PERMISSIVE
-for SELECT
-to authenticated
-using (
-  (select auth.uid()) = profile_id
-);
-
--- Allow users to insert their own tokens
-create policy "Enable insert for users based on profile_id"
-on "public"."apn_tokens"
-as PERMISSIVE
-for INSERT
-to authenticated
-with check (
-  (select auth.uid()) = profile_id
-);
-
--- Allow users to update their own tokens
-create policy "Enable update for users based on profile_id"
-on "public"."apn_tokens"
-as PERMISSIVE
-for UPDATE
-to authenticated
-with check (
-  (select auth.uid()) = profile_id
-);
+CREATE POLICY "Enable full access for users based on profile_id"
+    ON apn_tokens
+    AS PERMISSIVE
+    FOR ALL
+    TO authenticated
+    USING (auth.uid() = profile_id)
+    WITH CHECK (auth.uid() = profile_id);
 
 
 -- Create trigger function to update updated_at timestamp
