@@ -30,41 +30,58 @@ class HeadPoseDetectionService {
     private func loadModel() {
         do {
             print("📱 Attempting to load FacePose model...")
-            model = try FacePose(configuration: MLModelConfiguration())
-            visionModel = try VNCoreMLModel(for: model!.model)
+            let config = MLModelConfiguration()
+            config.computeUnits = .all  // Use all available compute units
+            model = try FacePose(configuration: config)
+
+            guard let model = model else {
+                print("❌ Model is nil after initialization")
+                return
+            }
+
+            visionModel = try VNCoreMLModel(for: model.model)
             print("✅ Successfully loaded FacePose model")
         } catch {
             print("❌ Failed to load CoreML model: \(error)")
         }
     }
 
+    private func isModelReady() -> Bool {
+        return model != nil && visionModel != nil
+    }
+
     func detectHeadPose(in image: UIImage) async throws -> HeadPoseObservation {
-        guard let visionModel = visionModel else {
+        guard isModelReady() else {
             throw RoboflowError.modelNotLoaded
         }
 
+        guard let cgImage = image.cgImage else {
+            throw RoboflowError.imageConversionFailed
+        }
+
         let requestHandler = VNImageRequestHandler(
-            cgImage: image.cgImage!,
+            cgImage: cgImage,
             options: [:]
         )
 
-        let request = VNCoreMLRequest(model: visionModel)
+        let request = VNCoreMLRequest(model: visionModel!)
 
         do {
             try requestHandler.perform([request])
         } catch {
+            print("❌ Vision request handler failed: \(error)")
             throw RoboflowError.invalidResponseFormat
         }
 
-        if let results = request.results {
-            if let firstResult = results.first as? VNCoreMLFeatureValueObservation {
-                return processCoreMLFeatureValue(firstResult)
-            } else {
-                throw RoboflowError.invalidResponseFormat
-            }
-        } else {
+        guard let results = request.results else {
             throw RoboflowError.invalidResponseFormat
         }
+
+        guard let firstResult = results.first as? VNCoreMLFeatureValueObservation else {
+            throw RoboflowError.invalidResponseFormat
+        }
+
+        return processCoreMLFeatureValue(firstResult)
     }
 
     private func processCoreMLFeatureValue(_ observation: VNCoreMLFeatureValueObservation)
@@ -81,6 +98,12 @@ class HeadPoseDetectionService {
 
         let shape = multiArray.shape.map { $0.intValue }  // [1, 23, 8400]
         let strides = multiArray.strides.map { $0.intValue }  // [193200, 8400, 1]
+
+        // Safety check for valid shape and strides
+        guard shape.count >= 3, strides.count >= 3 else {
+            return HeadPoseObservation(keypoints: [], confidence: 0.0, boundingBox: .zero)
+        }
+
         let pointer = UnsafeMutablePointer<Float32>(OpaquePointer(multiArray.dataPointer))
 
         let anchorCount = shape[2]  // 8400
@@ -96,6 +119,12 @@ class HeadPoseDetectionService {
         // Find the anchor with the highest objectness confidence
         for anchor in 0..<anchorCount {
             let confidenceIndex = 4 * strides[1] + anchor * strides[2]
+
+            // Safety check for array bounds
+            guard confidenceIndex >= 0 && confidenceIndex < multiArray.count else {
+                continue
+            }
+
             let rawConf = pointer[confidenceIndex]
             let conf = sigmoid(rawConf)
 
@@ -110,11 +139,24 @@ class HeadPoseDetectionService {
             return HeadPoseObservation(keypoints: [], confidence: 0.0, boundingBox: .zero)
         }
 
-        // Extract bounding box
-        let xCenter = pointer[0 * strides[1] + bestAnchor * strides[2]]
-        let yCenter = pointer[1 * strides[1] + bestAnchor * strides[2]]
-        let width = pointer[2 * strides[1] + bestAnchor * strides[2]]
-        let height = pointer[3 * strides[1] + bestAnchor * strides[2]]
+        // Extract bounding box with safety checks
+        let xCenterIndex = 0 * strides[1] + bestAnchor * strides[2]
+        let yCenterIndex = 1 * strides[1] + bestAnchor * strides[2]
+        let widthIndex = 2 * strides[1] + bestAnchor * strides[2]
+        let heightIndex = 3 * strides[1] + bestAnchor * strides[2]
+
+        guard xCenterIndex >= 0 && xCenterIndex < multiArray.count,
+            yCenterIndex >= 0 && yCenterIndex < multiArray.count,
+            widthIndex >= 0 && widthIndex < multiArray.count,
+            heightIndex >= 0 && heightIndex < multiArray.count
+        else {
+            return HeadPoseObservation(keypoints: [], confidence: 0.0, boundingBox: .zero)
+        }
+
+        let xCenter = pointer[xCenterIndex]
+        let yCenter = pointer[yCenterIndex]
+        let width = pointer[widthIndex]
+        let height = pointer[heightIndex]
 
         let boundingBox = CGRect(
             x: CGFloat(xCenter - width / 2),
@@ -123,13 +165,25 @@ class HeadPoseDetectionService {
             height: CGFloat(height)
         )
 
-        // Extract 6 keypoints
+        // Extract 6 keypoints with safety checks
         var keypoints: [Keypoint] = []
 
         for i in 0..<6 {
-            let x = pointer[(5 + i * 3) * strides[1] + bestAnchor * strides[2]]
-            let y = pointer[(6 + i * 3) * strides[1] + bestAnchor * strides[2]]
-            let conf = pointer[(7 + i * 3) * strides[1] + bestAnchor * strides[2]]
+            let xIndex = (5 + i * 3) * strides[1] + bestAnchor * strides[2]
+            let yIndex = (6 + i * 3) * strides[1] + bestAnchor * strides[2]
+            let confIndex = (7 + i * 3) * strides[1] + bestAnchor * strides[2]
+
+            guard xIndex >= 0 && xIndex < multiArray.count,
+                yIndex >= 0 && yIndex < multiArray.count,
+                confIndex >= 0 && confIndex < multiArray.count
+            else {
+                continue
+            }
+
+            let x = pointer[xIndex]
+            let y = pointer[yIndex]
+            let conf = pointer[confIndex]
+
             keypoints.append(
                 Keypoint(
                     name: keypointNames[i],

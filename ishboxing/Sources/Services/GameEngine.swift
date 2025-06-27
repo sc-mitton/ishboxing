@@ -265,7 +265,9 @@ final class GameEngine: ObservableObject {
                         x: lastPoint!.x + (dx * CGFloat(i)),
                         y: lastPoint!.y + (dy * CGFloat(i))
                     ))
-                self.remoteSwipePoints.removeFirst()
+                if self.remoteSwipePoints.count > MAX_SWIPE_POINTS {
+                    self.remoteSwipePoints.removeFirst()
+                }
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {

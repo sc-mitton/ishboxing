@@ -72,6 +72,25 @@ struct MatchView: View {
                     .edgesIgnoringSafeArea(.all)
             }
 
+            // Waiting for opponent overlay
+            if viewModel.webRTCConnectionState != .connected
+                && !gameEngine.oponentIsReady
+            {
+                ZStack {
+                    VStack(spacing: 20) {
+                        Text("Waiting for opponent...")
+                            .font(.bangers(size: 26))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.5)
+                    }
+                }
+                .zIndex(2)  // Ensure it's above other content
+            }
+
             // Local video view (smaller, top right corner)
             if let localVideoView = localVideoView {
                 ZStack {
