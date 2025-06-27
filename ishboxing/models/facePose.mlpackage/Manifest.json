@@ -1,30 +1,18 @@
 {
     "fileFormatVersion": "1.0.0",
     "itemInfoEntries": {
-        "5CC0465E-30C5-4F24-BFF4-01C51E9E6B79": {
+        "1252D09C-0B2A-4ED6-B941-E159AA47BD78": {
             "author": "com.apple.CoreML",
             "description": "CoreML Model Weights",
             "name": "weights",
             "path": "com.apple.CoreML/weights"
         },
-        "B9D8D570-6722-41B1-8319-C4809C70E97F": {
+        "8D75472C-630E-4413-A443-D4DAD4D60C9E": {
             "author": "com.apple.CoreML",
             "description": "CoreML Model Specification",
             "name": "model.mlmodel",
             "path": "com.apple.CoreML/model.mlmodel"
-        },
-        "E285E8A5-A94F-46C2-9C81-F189581AFF5A": {
-            "author": "com.apple.CoreML",
-            "description": "External Metadata Overlay",
-            "name": "Metadata.json",
-            "path": "com.apple.CoreML/Metadata.json"
-        },
-        "E34EE9CD-5760-4322-8390-9BED3544691E": {
-            "author": "com.apple.CoreML",
-            "description": "External FeatureDescription Overlay",
-            "name": "FeatureDescriptions.json",
-            "path": "com.apple.CoreML/FeatureDescriptions.json"
         }
     },
-    "rootModelIdentifier": "B9D8D570-6722-41B1-8319-C4809C70E97F"
+    "rootModelIdentifier": "8D75472C-630E-4413-A443-D4DAD4D60C9E"
 }

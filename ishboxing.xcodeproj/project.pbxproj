@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9A5B713F2E0E3A080033078D /* FacePose.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 9A5B713E2E0E3A080033078D /* FacePose.mlpackage */; };
 		9A9C53EA2DEF9F200060E85F /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53E92DEF9F200060E85F /* Starscream */; };
 		9A9C53ED2DEF9F340060E85F /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53EC2DEF9F340060E85F /* Auth */; };
 		9A9C53EF2DEF9F340060E85F /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 9A9C53EE2DEF9F340060E85F /* Functions */; };
@@ -40,6 +41,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9A5B713E2E0E3A080033078D /* FacePose.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = FacePose.mlpackage; sourceTree = "<group>"; };
 		9A9C54362DEFA5C60060E85F /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = DebugConfig.xcconfig; sourceTree = "<group>"; };
 		9AF997542DEF9DE7007F6F8C /* ishboxing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ishboxing.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -132,6 +134,7 @@
 				9AF997552DEF9DE7007F6F8C /* Products */,
 				9A9C54362DEFA5C60060E85F /* Config.xcconfig */,
 				9A9C54382DEFA5CB0060E85F /* DebugConfig.xcconfig */,
+				9A5B713E2E0E3A080033078D /* FacePose.mlpackage */,
 			);
 			sourceTree = "<group>";
 		};
@@ -310,6 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A5B713F2E0E3A080033078D /* FacePose.mlpackage in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
