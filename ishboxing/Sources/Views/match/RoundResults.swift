@@ -9,9 +9,14 @@ struct RoundResults: View {
     var currentUserStreak: Int {
         var streak = 0
         for i in (0..<currentRound[0]).reversed() {
-            if let result = roundResults[i][1], result > 0 {
+            let currentUserDodges = roundResults[i][0] ?? 0
+            let opponentDodges = roundResults[i][1] ?? 0
+
+            if currentUserDodges > opponentDodges {
+                // Win - current user has more dodges
                 streak += 1
             } else {
+                // Break streak on loss or draw
                 break
             }
         }
@@ -21,9 +26,14 @@ struct RoundResults: View {
     var opposingUserStreak: Int {
         var streak = 0
         for i in (0..<currentRound[0]).reversed() {
-            if let result = roundResults[i][0], result > 0 {
+            let currentUserDodges = roundResults[i][0] ?? 0
+            let opponentDodges = roundResults[i][1] ?? 0
+
+            if opponentDodges > currentUserDodges {
+                // Win - opponent has more dodges
                 streak += 1
             } else {
+                // Break streak on loss or draw
                 break
             }
         }
@@ -110,25 +120,35 @@ struct RoundCircle: View {
                 .frame(width: 28, height: 28)
 
             if roundIndex < currentRound {
-                if let result = roundResults[roundIndex][1] {
-                    if result > 0 {
-                        // Win - show star
-                        ZStack {
-                            Circle()
-                                .fill(Color.blue.opacity(0.3))
-                                .frame(width: 28, height: 28)
-                            Text("⭐️")
-                                .font(.system(size: 16))
-                        }
-                    } else {
-                        // Loss - show X
-                        ZStack {
-                            Circle()
-                                .fill(Color.red.opacity(0.3))
-                                .frame(width: 28, height: 28)
-                            Text("🪦")
-                                .font(.bangers(size: 16))
-                        }
+                let currentUserDodges = roundResults[roundIndex][0] ?? 0
+                let opponentDodges = roundResults[roundIndex][1] ?? 0
+
+                if currentUserDodges > opponentDodges {
+                    // Win - current user has more dodges
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.3))
+                            .frame(width: 28, height: 28)
+                        Text("⭐️")
+                            .font(.system(size: 16))
+                    }
+                } else if opponentDodges > currentUserDodges {
+                    // Loss - opponent has more dodges
+                    ZStack {
+                        Circle()
+                            .fill(Color.red.opacity(0.3))
+                            .frame(width: 28, height: 28)
+                        Text("🪦")
+                            .font(.bangers(size: 16))
+                    }
+                } else {
+                    // Draw - same number of dodges
+                    ZStack {
+                        Circle()
+                            .fill(Color.yellow.opacity(0.3))
+                            .frame(width: 28, height: 28)
+                        Text("🤝")
+                            .font(.system(size: 16))
                     }
                 }
             }

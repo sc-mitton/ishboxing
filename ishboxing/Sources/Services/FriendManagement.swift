@@ -21,16 +21,44 @@ class FriendManagement: ObservableObject {
     @Published var errorMessage: String?
 
     private let supabaseService = SupabaseService.shared
+    private var currentFetchTask: Task<Void, Never>?
 
     private init() {}
 
     func fetchFriends() async {
-        isLoading = true
-        errorMessage = nil
+        // Cancel any existing fetch task
+        currentFetchTask?.cancel()
+
+        // Create new fetch task
+        currentFetchTask = Task {
+            await performFetch()
+        }
+
+        await currentFetchTask?.value
+    }
+
+    private func performFetch() async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
 
         do {
-            let (fetchedFriends, fetchedPendingRequests, fetchedSentRequests) =
+            // Add timeout to prevent hanging
+            let fetchTask = Task {
                 try await supabaseService.getAllFriendRelationships()
+            }
+
+            let result = try await withTimeout(seconds: 10) {
+                try await fetchTask.value
+            }
+
+            // Check if task was cancelled
+            if Task.isCancelled {
+                return
+            }
+
+            let (fetchedFriends, fetchedPendingRequests, fetchedSentRequests) = result
 
             // Create list with unique IDs
             var allFriends: [FriendItem] = []
@@ -68,11 +96,38 @@ class FriendManagement: ObservableObject {
                     )
                 })
 
-            friends = allFriends
-            isLoading = false
+            await MainActor.run {
+                friends = allFriends
+                isLoading = false
+            }
         } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
+            await MainActor.run {
+                if error is CancellationError {
+                    // Task was cancelled, don't show error
+                    return
+                }
+                errorMessage = error.localizedDescription
+                isLoading = false
+            }
+        }
+    }
+
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T)
+        async throws -> T
+    {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw TimeoutError()
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
 
@@ -98,6 +153,25 @@ class FriendManagement: ObservableObject {
         try await supabaseService.deleteFriendship(friendId.uuidString)
         await fetchFriends()  // Refresh the friends list
     }
+
+    // Method to reset loading state if it gets stuck
+    func resetLoadingState() {
+        currentFetchTask?.cancel()
+        currentFetchTask = nil
+        Task { @MainActor in
+            isLoading = false
+            errorMessage = nil
+        }
+    }
+
+    // Debug method to check current state
+    func debugState() {
+        print("FriendManagement Debug State:")
+        print("- isLoading: \(isLoading)")
+        print("- errorMessage: \(errorMessage ?? "nil")")
+        print("- friends count: \(friends.count)")
+        print("- currentFetchTask: \(currentFetchTask != nil ? "active" : "nil")")
+    }
 }
 
 enum FriendError: LocalizedError {
@@ -108,5 +182,11 @@ enum FriendError: LocalizedError {
         case .emptyUsername:
             return "Please enter a username"
         }
+    }
+}
+
+struct TimeoutError: LocalizedError {
+    var errorDescription: String? {
+        return "Request timed out. Please try again."
     }
 }

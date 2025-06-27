@@ -62,45 +62,80 @@ private struct FriendsListContent: View {
     var body: some View {
         if friendManagement.isLoading {
             ScrollView {
-                Spacer()
-                ProgressView()
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-                Spacer()
+                VStack(spacing: 20) {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Text("Loading friends...")
+                        .foregroundColor(.gray)
+                        .font(.subheadline)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(Color.clear))
             .refreshable {
-                Task {
-                    await friendManagement.fetchFriends()
-                }
+                await friendManagement.fetchFriends()
             }
         } else if let error = friendManagement.errorMessage {
             ScrollView {
-                Spacer()
-                Text(error)
-                    .foregroundColor(.red)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding()
-                Spacer()
+                VStack(spacing: 20) {
+                    Spacer()
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 40))
+                        .foregroundColor(.red)
+                    Text("Failed to load friends")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+
+                    Button(action: {
+                        Task {
+                            await friendManagement.fetchFriends()
+                        }
+                    }) {
+                        Text("Retry")
+                            .font(.bangers(size: 18))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 12)
+                            .background(Color.ishRed)
+                            .cornerRadius(12)
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(Color.clear))
             .refreshable {
-                Task {
-                    await friendManagement.fetchFriends()
-                }
+                await friendManagement.fetchFriends()
             }
         } else {
             List {
                 if friendManagement.friends.isEmpty {
-                    HStack {
+                    VStack(spacing: 16) {
                         Spacer()
-                        Text("No friends yet")
+                        Image(systemName: "person.2")
+                            .font(.system(size: 40))
                             .foregroundColor(.gray)
-                            .padding()
+                        Text("No friends yet")
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                        Text("Add some friends to start boxing!")
+                            .font(.subheadline)
+                            .foregroundColor(.gray.opacity(0.8))
+                            .multilineTextAlignment(.center)
                         Spacer()
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                 } else {
@@ -120,9 +155,7 @@ private struct FriendsListContent: View {
             .listStyle(PlainListStyle())
             .background(Color(Color.clear))
             .refreshable {
-                Task {
-                    await friendManagement.fetchFriends()
-                }
+                await friendManagement.fetchFriends()
             }
         }
     }

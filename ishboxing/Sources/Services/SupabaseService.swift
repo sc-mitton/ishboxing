@@ -147,76 +147,90 @@ class SupabaseService: ObservableObject {
         let session = try await client.auth.session
         let userId = session.user.id
 
-        // Single query to get all friend relationships where current user is involved
-        let response = try await client.from("friends")
-            .select(
-                """
-                    id,
-                    user_id,
-                    friend_id,
-                    confirmed,
-                    friend_profile:profiles!friends_friend_id_fkey (
-                        username
-                    ),
-                    user_profile:profiles!friends_user_id_fkey (
-                        username
-                    )
-                """
-            )
-            .or("user_id.eq.\(userId),friend_id.eq.\(userId)")
-            .execute()
+        do {
+            // Single query to get all friend relationships where current user is involved
+            let response = try await client.from("friends")
+                .select(
+                    """
+                        id,
+                        user_id,
+                        friend_id,
+                        confirmed,
+                        friend_profile:profiles!friends_friend_id_fkey (
+                            username
+                        ),
+                        user_profile:profiles!friends_user_id_fkey (
+                            username
+                        )
+                    """
+                )
+                .or("user_id.eq.\(userId),friend_id.eq.\(userId)")
+                .execute()
 
-        // Parse the response
-        let relationshipsData = try self.decoder.decode(
-            [FriendRelationshipResponse].self, from: response.data)
+            // Parse the response
+            let relationshipsData = try self.decoder.decode(
+                [FriendRelationshipResponse].self, from: response.data)
 
-        var confirmedFriends: [User] = []
-        var pendingRequests: [FriendRequest] = []
-        var sentRequests: [FriendRequest] = []
+            var confirmedFriends: [User] = []
+            var pendingRequests: [FriendRequest] = []
+            var sentRequests: [FriendRequest] = []
 
-        for relationship in relationshipsData {
-            if relationship.confirmed == true {
-                // This is a confirmed friendship
-                let friendUser: User
-                if relationship.user_id == userId {
-                    // Current user is user_id, so use friend's info
-                    friendUser = User(
-                        id: relationship.friend_id,
-                        username: relationship.friend_profile.username
-                    )
+            for relationship in relationshipsData {
+                if relationship.confirmed == true {
+                    // This is a confirmed friendship
+                    let friendUser: User
+                    if relationship.user_id == userId {
+                        // Current user is user_id, so use friend's info
+                        friendUser = User(
+                            id: relationship.friend_id,
+                            username: relationship.friend_profile.username
+                        )
+                    } else {
+                        // Current user is friend_id, so use user's info
+                        friendUser = User(
+                            id: relationship.user_id,
+                            username: relationship.user_profile.username
+                        )
+                    }
+                    confirmedFriends.append(friendUser)
                 } else {
-                    // Current user is friend_id, so use user's info
-                    friendUser = User(
-                        id: relationship.user_id,
-                        username: relationship.user_profile.username
-                    )
-                }
-                confirmedFriends.append(friendUser)
-            } else {
-                // This is a pending request
-                if relationship.user_id == userId {
-                    // Current user sent the request
-                    let sentRequest = FriendRequest(
-                        id: relationship.id,
-                        from: relationship.user_id,
-                        to: relationship.friend_id,
-                        username: relationship.friend_profile.username
-                    )
-                    sentRequests.append(sentRequest)
-                } else {
-                    // Current user received the request
-                    let pendingRequest = FriendRequest(
-                        id: relationship.id,
-                        from: relationship.user_id,
-                        to: relationship.friend_id,
-                        username: relationship.user_profile.username
-                    )
-                    pendingRequests.append(pendingRequest)
+                    // This is a pending request
+                    if relationship.user_id == userId {
+                        // Current user sent the request
+                        let sentRequest = FriendRequest(
+                            id: relationship.id,
+                            from: relationship.user_id,
+                            to: relationship.friend_id,
+                            username: relationship.friend_profile.username
+                        )
+                        sentRequests.append(sentRequest)
+                    } else {
+                        // Current user received the request
+                        let pendingRequest = FriendRequest(
+                            id: relationship.id,
+                            from: relationship.user_id,
+                            to: relationship.friend_id,
+                            username: relationship.user_profile.username
+                        )
+                        pendingRequests.append(pendingRequest)
+                    }
                 }
             }
-        }
 
-        return (confirmedFriends, pendingRequests, sentRequests)
+            return (confirmedFriends, pendingRequests, sentRequests)
+        } catch let decodingError as DecodingError {
+            debugPrint("Decoding error in getAllFriendRelationships: \(decodingError)")
+            throw NSError(
+                domain: "SupabaseService",
+                code: -1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "Failed to parse friend data. Please try again."
+                ]
+            )
+        } catch {
+            debugPrint("Error in getAllFriendRelationships: \(error)")
+            throw error
+        }
     }
 
     func addFriend(_ username: String) async throws {

@@ -108,8 +108,14 @@ struct HomeView: View {
             }
 
             .task {
-                await friendManagement.fetchFriends()
-                await fetchStats()
+                await withTaskGroup(of: Void.self) { group in
+                    group.addTask {
+                        await friendManagement.fetchFriends()
+                    }
+                    group.addTask {
+                        await fetchStats()
+                    }
+                }
             }
             .onAppear {
                 requestPermissionsIfNeeded()
@@ -187,11 +193,14 @@ struct HomeView: View {
     private func fetchStats() async {
         do {
             let stats = try await SupabaseService.shared.getMatchStats()
-            wins = stats.wins
-            losses = stats.losses
-            streak = stats.streak
+            await MainActor.run {
+                wins = stats.wins
+                losses = stats.losses
+                streak = stats.streak
+            }
         } catch {
             print("Error fetching stats: \(error)")
+            // Don't update UI on error, keep existing values
         }
     }
 }
